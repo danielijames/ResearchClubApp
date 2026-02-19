@@ -1,0 +1,546 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXContainerItemProxy section */
+		E397072E2F47BB9E00D71989 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E39707142F47BB9C00D71989 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E397071B2F47BB9C00D71989;
+			remoteInfo = ResearchClubApp;
+		};
+		E39707382F47BB9E00D71989 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E39707142F47BB9C00D71989 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E397071B2F47BB9C00D71989;
+			remoteInfo = ResearchClubApp;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		E397071C2F47BB9C00D71989 /* ResearchClubApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ResearchClubApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E397072D2F47BB9E00D71989 /* ResearchClubAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ResearchClubAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		E39707372F47BB9E00D71989 /* ResearchClubAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ResearchClubAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		E397071E2F47BB9C00D71989 /* ResearchClubApp */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ResearchClubApp;
+			sourceTree = "<group>";
+		};
+		E39707302F47BB9E00D71989 /* ResearchClubAppTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ResearchClubAppTests;
+			sourceTree = "<group>";
+		};
+		E397073A2F47BB9E00D71989 /* ResearchClubAppUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ResearchClubAppUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		E39707192F47BB9C00D71989 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E397072A2F47BB9E00D71989 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E39707342F47BB9E00D71989 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		E39707132F47BB9C00D71989 = {
+			isa = PBXGroup;
+			children = (
+				E397071E2F47BB9C00D71989 /* ResearchClubApp */,
+				E39707302F47BB9E00D71989 /* ResearchClubAppTests */,
+				E397073A2F47BB9E00D71989 /* ResearchClubAppUITests */,
+				E397071D2F47BB9C00D71989 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		E397071D2F47BB9C00D71989 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				E397071C2F47BB9C00D71989 /* ResearchClubApp.app */,
+				E397072D2F47BB9E00D71989 /* ResearchClubAppTests.xctest */,
+				E39707372F47BB9E00D71989 /* ResearchClubAppUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		E397071B2F47BB9C00D71989 /* ResearchClubApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E39707412F47BB9E00D71989 /* Build configuration list for PBXNativeTarget "ResearchClubApp" */;
+			buildPhases = (
+				E39707182F47BB9C00D71989 /* Sources */,
+				E39707192F47BB9C00D71989 /* Frameworks */,
+				E397071A2F47BB9C00D71989 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				E397071E2F47BB9C00D71989 /* ResearchClubApp */,
+			);
+			name = ResearchClubApp;
+			packageProductDependencies = (
+			);
+			productName = ResearchClubApp;
+			productReference = E397071C2F47BB9C00D71989 /* ResearchClubApp.app */;
+			productType = "com.apple.product-type.application";
+		};
+		E397072C2F47BB9E00D71989 /* ResearchClubAppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E39707442F47BB9E00D71989 /* Build configuration list for PBXNativeTarget "ResearchClubAppTests" */;
+			buildPhases = (
+				E39707292F47BB9E00D71989 /* Sources */,
+				E397072A2F47BB9E00D71989 /* Frameworks */,
+				E397072B2F47BB9E00D71989 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				E397072F2F47BB9E00D71989 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				E39707302F47BB9E00D71989 /* ResearchClubAppTests */,
+			);
+			name = ResearchClubAppTests;
+			packageProductDependencies = (
+			);
+			productName = ResearchClubAppTests;
+			productReference = E397072D2F47BB9E00D71989 /* ResearchClubAppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		E39707362F47BB9E00D71989 /* ResearchClubAppUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E39707472F47BB9E00D71989 /* Build configuration list for PBXNativeTarget "ResearchClubAppUITests" */;
+			buildPhases = (
+				E39707332F47BB9E00D71989 /* Sources */,
+				E39707342F47BB9E00D71989 /* Frameworks */,
+				E39707352F47BB9E00D71989 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				E39707392F47BB9E00D71989 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				E397073A2F47BB9E00D71989 /* ResearchClubAppUITests */,
+			);
+			name = ResearchClubAppUITests;
+			packageProductDependencies = (
+			);
+			productName = ResearchClubAppUITests;
+			productReference = E39707372F47BB9E00D71989 /* ResearchClubAppUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		E39707142F47BB9C00D71989 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1610;
+				LastUpgradeCheck = 1610;
+				TargetAttributes = {
+					E397071B2F47BB9C00D71989 = {
+						CreatedOnToolsVersion = 16.1;
+					};
+					E397072C2F47BB9E00D71989 = {
+						CreatedOnToolsVersion = 16.1;
+						TestTargetID = E397071B2F47BB9C00D71989;
+					};
+					E39707362F47BB9E00D71989 = {
+						CreatedOnToolsVersion = 16.1;
+						TestTargetID = E397071B2F47BB9C00D71989;
+					};
+				};
+			};
+			buildConfigurationList = E39707172F47BB9C00D71989 /* Build configuration list for PBXProject "ResearchClubApp" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = E39707132F47BB9C00D71989;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = E397071D2F47BB9C00D71989 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				E397071B2F47BB9C00D71989 /* ResearchClubApp */,
+				E397072C2F47BB9E00D71989 /* ResearchClubAppTests */,
+				E39707362F47BB9E00D71989 /* ResearchClubAppUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		E397071A2F47BB9C00D71989 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E397072B2F47BB9E00D71989 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E39707352F47BB9E00D71989 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		E39707182F47BB9C00D71989 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E39707292F47BB9E00D71989 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E39707332F47BB9E00D71989 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		E397072F2F47BB9E00D71989 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E397071B2F47BB9C00D71989 /* ResearchClubApp */;
+			targetProxy = E397072E2F47BB9E00D71989 /* PBXContainerItemProxy */;
+		};
+		E39707392F47BB9E00D71989 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E397071B2F47BB9C00D71989 /* ResearchClubApp */;
+			targetProxy = E39707382F47BB9E00D71989 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		E397073F2F47BB9E00D71989 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.1;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		E39707402F47BB9E00D71989 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.1;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		E39707422F47BB9E00D71989 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = ResearchClubApp/ResearchClubApp.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"ResearchClubApp/Preview Content\"";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = danieljames.ResearchClubApp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		E39707432F47BB9E00D71989 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = ResearchClubApp/ResearchClubApp.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"ResearchClubApp/Preview Content\"";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = danieljames.ResearchClubApp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		E39707452F47BB9E00D71989 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.1;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = danieljames.ResearchClubAppTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ResearchClubApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ResearchClubApp";
+			};
+			name = Debug;
+		};
+		E39707462F47BB9E00D71989 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.1;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = danieljames.ResearchClubAppTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ResearchClubApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ResearchClubApp";
+			};
+			name = Release;
+		};
+		E39707482F47BB9E00D71989 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = danieljames.ResearchClubAppUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = ResearchClubApp;
+			};
+			name = Debug;
+		};
+		E39707492F47BB9E00D71989 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = danieljames.ResearchClubAppUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = ResearchClubApp;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		E39707172F47BB9C00D71989 /* Build configuration list for PBXProject "ResearchClubApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E397073F2F47BB9E00D71989 /* Debug */,
+				E39707402F47BB9E00D71989 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E39707412F47BB9E00D71989 /* Build configuration list for PBXNativeTarget "ResearchClubApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E39707422F47BB9E00D71989 /* Debug */,
+				E39707432F47BB9E00D71989 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E39707442F47BB9E00D71989 /* Build configuration list for PBXNativeTarget "ResearchClubAppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E39707452F47BB9E00D71989 /* Debug */,
+				E39707462F47BB9E00D71989 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E39707472F47BB9E00D71989 /* Build configuration list for PBXNativeTarget "ResearchClubAppUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E39707482F47BB9E00D71989 /* Debug */,
+				E39707492F47BB9E00D71989 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = E39707142F47BB9C00D71989 /* Project object */;
+}

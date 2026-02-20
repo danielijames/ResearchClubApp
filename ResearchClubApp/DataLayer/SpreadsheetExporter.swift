@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct SavedSpreadsheet: Identifiable, Equatable {
+struct SavedSpreadsheet: Identifiable, Equatable, Codable {
     let id: UUID
     let fileURL: URL
     let ticker: String
@@ -46,6 +46,39 @@ struct SavedSpreadsheet: Identifiable, Equatable {
     
     var fileName: String {
         fileURL.lastPathComponent
+    }
+    
+    // MARK: - Codable
+    
+    enum CodingKeys: String, CodingKey {
+        case id, ticker, date, granularity, dataPointCount, createdAt, isSelectedForLLM
+        case fileURLString
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        let urlString = try container.decode(String.self, forKey: .fileURLString)
+        fileURL = URL(fileURLWithPath: urlString)
+        ticker = try container.decode(String.self, forKey: .ticker)
+        date = try container.decode(Date.self, forKey: .date)
+        let granularityValue = try container.decode(Int.self, forKey: .granularity)
+        granularity = AggregateGranularity(rawValue: granularityValue) ?? .fiveMinutes
+        dataPointCount = try container.decode(Int.self, forKey: .dataPointCount)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        isSelectedForLLM = try container.decode(Bool.self, forKey: .isSelectedForLLM)
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(fileURL.path, forKey: .fileURLString)
+        try container.encode(ticker, forKey: .ticker)
+        try container.encode(date, forKey: .date)
+        try container.encode(granularity.rawValue, forKey: .granularity)
+        try container.encode(dataPointCount, forKey: .dataPointCount)
+        try container.encode(createdAt, forKey: .createdAt)
+        try container.encode(isSelectedForLLM, forKey: .isSelectedForLLM)
     }
 }
 

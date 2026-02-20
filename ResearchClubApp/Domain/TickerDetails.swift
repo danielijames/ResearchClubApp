@@ -8,7 +8,7 @@
 import Foundation
 
 /// Domain model for stock ticker financial details
-struct TickerDetails: Identifiable, Equatable {
+struct TickerDetails: Identifiable, Equatable, Codable {
     let id: UUID
     let ticker: String
     let marketCap: Double? // Market capitalization

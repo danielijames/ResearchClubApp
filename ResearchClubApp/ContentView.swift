@@ -35,6 +35,7 @@ struct ContentView: View {
     private let spreadsheetExporter = SpreadsheetExporter()
     private let minChatWidth: CGFloat = 500
     private let maxChatWidth: CGFloat = 800
+    private let appStateManager = AppStateManager.shared
     
     private var currentTab: ResearchTab? {
         tabs.first { $0.id == selectedTabId } ?? tabs.first
@@ -126,6 +127,8 @@ struct ContentView: View {
             )
         }
         .onAppear {
+            // Load application state first
+            loadApplicationState()
             // Update repository with current settings
             updateRepository()
             // Load saved spreadsheets immediately
@@ -146,6 +149,29 @@ struct ContentView: View {
             if let tabId = newValue, let index = tabs.firstIndex(where: { $0.id == tabId }) {
                 loadMessagesForTab(at: index)
             }
+            // Save state when tab changes
+            saveApplicationState()
+        }
+        .onChange(of: tabs) { oldValue, newValue in
+            // Save state when tabs change
+            saveApplicationState()
+        }
+        .onChange(of: geminiChatWidth) { oldValue, newValue in
+            // Save state when Gemini chat width changes
+            saveApplicationState()
+        }
+        .onChange(of: viewModel.ticker) { oldValue, newValue in
+            // Save state when input changes
+            saveApplicationState()
+        }
+        .onChange(of: viewModel.startDate) { oldValue, newValue in
+            saveApplicationState()
+        }
+        .onChange(of: viewModel.endDate) { oldValue, newValue in
+            saveApplicationState()
+        }
+        .onChange(of: viewModel.granularity) { oldValue, newValue in
+            saveApplicationState()
         }
     }
     
@@ -300,6 +326,58 @@ struct ContentView: View {
     
     private func loadSavedSpreadsheets() {
         savedSpreadsheets = spreadsheetExporter.getAllSavedSpreadsheets()
+    }
+    
+    // MARK: - Application State Persistence
+    
+    private func saveApplicationState() {
+        let inputState = InputState(
+            ticker: viewModel.ticker,
+            startDate: viewModel.startDate,
+            endDate: viewModel.endDate,
+            granularityRawValue: viewModel.granularity.rawValue
+        )
+        
+        let appState = AppState(
+            selectedTabId: selectedTabId,
+            tabs: tabs,
+            inputState: inputState,
+            geminiChatWidth: geminiChatWidth,
+            lastSavedAt: Date()
+        )
+        
+        appStateManager.saveState(appState)
+    }
+    
+    private func loadApplicationState() {
+        guard let savedState = appStateManager.loadState() else {
+            print("ℹ️ No saved state found, using defaults")
+            return
+        }
+        
+        // Restore tabs
+        if !savedState.tabs.isEmpty {
+            tabs = savedState.tabs
+        }
+        
+        // Restore selected tab
+        if let savedTabId = savedState.selectedTabId,
+           tabs.contains(where: { $0.id == savedTabId }) {
+            selectedTabId = savedTabId
+        }
+        
+        // Restore input state
+        viewModel.ticker = savedState.inputState.ticker
+        viewModel.startDate = savedState.inputState.startDate
+        viewModel.endDate = savedState.inputState.endDate
+        viewModel.granularity = savedState.inputState.granularity
+        
+        // Restore Gemini chat width
+        if savedState.geminiChatWidth > 0 {
+            geminiChatWidth = savedState.geminiChatWidth
+        }
+        
+        print("✅ Restored application state from \(savedState.lastSavedAt)")
     }
     
     // MARK: - Search History View

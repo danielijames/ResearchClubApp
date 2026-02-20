@@ -19,6 +19,11 @@ struct GeminiPart: Codable {
 struct GeminiRequest: Codable {
     let contents: [GeminiMessage]
     let systemInstruction: GeminiSystemInstruction?
+    
+    enum CodingKeys: String, CodingKey {
+        case contents
+        case systemInstruction
+    }
 }
 
 struct GeminiSystemInstruction: Codable {
@@ -64,10 +69,20 @@ enum GeminiError: LocalizedError {
 
 class GeminiService {
     private let apiKey: String
-    private let baseURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+    // Using gemini-1.5-pro as it's more stable
+    // Alternative models: gemini-2.0-flash-exp, gemini-1.5-flash
+    private let modelName = "gemini-1.5-pro"
+    private let apiVersion = "v1beta" // Can also try "v1"
     
     init(apiKey: String) {
         self.apiKey = apiKey
+    }
+    
+    private func buildRequestURL() -> URL? {
+        let baseURLString = "https://generativelanguage.googleapis.com/\(apiVersion)/models/\(modelName):generateContent"
+        var urlComponents = URLComponents(string: baseURLString)
+        urlComponents?.queryItems = [URLQueryItem(name: "key", value: apiKey)]
+        return urlComponents?.url
     }
     
     func sendMessage(
@@ -92,12 +107,7 @@ class GeminiService {
         )
         
         // Build URL
-        guard var urlComponents = URLComponents(string: baseURL) else {
-            throw GeminiError.invalidResponse
-        }
-        urlComponents.queryItems = [URLQueryItem(name: "key", value: apiKey)]
-        
-        guard let url = urlComponents.url else {
+        guard let url = buildRequestURL() else {
             throw GeminiError.invalidResponse
         }
         
@@ -105,11 +115,20 @@ class GeminiService {
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "POST"
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        // Also include API key in header (some APIs prefer this)
+        urlRequest.setValue(apiKey, forHTTPHeaderField: "x-goog-api-key")
         
         do {
             urlRequest.httpBody = try JSONEncoder().encode(request)
         } catch {
             throw GeminiError.invalidResponse
+        }
+        
+        // Debug: Print request details
+        print("🔍 Gemini API Request URL: \(url.absoluteString)")
+        print("🔍 Request Method: \(urlRequest.httpMethod ?? "unknown")")
+        if let body = urlRequest.httpBody, let bodyString = String(data: body, encoding: .utf8) {
+            print("🔍 Request Body: \(String(bodyString.prefix(500)))...")
         }
         
         // Send request
@@ -119,12 +138,31 @@ class GeminiService {
             throw GeminiError.networkError("Invalid response")
         }
         
+        // Debug: Print response details
+        print("🔍 Gemini API Response Status: \(httpResponse.statusCode)")
+        if let responseString = String(data: data, encoding: .utf8) {
+            print("🔍 Response Body: \(String(responseString.prefix(500)))...")
+        }
+        
         // Handle errors
         if httpResponse.statusCode == 400 {
+            // Try to parse error details
+            if let errorData = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let errorMessage = errorData["error"] as? [String: Any],
+               let message = errorMessage["message"] as? String {
+                throw GeminiError.networkError("Bad Request: \(message)")
+            }
             throw GeminiError.invalidAPIKey
+        } else if httpResponse.statusCode == 401 {
+            throw GeminiError.invalidAPIKey
+        } else if httpResponse.statusCode == 404 {
+            throw GeminiError.networkError("Endpoint not found (404). Check API URL and model name.")
         } else if httpResponse.statusCode == 429 {
             throw GeminiError.rateLimitExceeded
         } else if httpResponse.statusCode != 200 {
+            if let responseString = String(data: data, encoding: .utf8) {
+                throw GeminiError.networkError("HTTP \(httpResponse.statusCode): \(responseString)")
+            }
             throw GeminiError.networkError("HTTP \(httpResponse.statusCode)")
         }
         

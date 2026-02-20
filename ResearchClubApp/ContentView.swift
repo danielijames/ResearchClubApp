@@ -21,8 +21,11 @@ struct ContentView: View {
     @State private var showDataAnalysisHub: Bool = false
     @State private var selectedSpreadsheetForText: SavedSpreadsheet?
     @StateObject private var geminiCredentialManager = GeminiCredentialManager()
+    @State private var geminiChatHeight: CGFloat = 300
     
     private let spreadsheetExporter = SpreadsheetExporter()
+    private let minChatHeight: CGFloat = 200
+    private let maxChatHeight: CGFloat = 600
     
     init() {
         // Initialize with mock repository by default
@@ -638,15 +641,36 @@ struct ContentView: View {
                     }
                 }
                 .listStyle(.inset(alternatesRowBackgrounds: true))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             
+            // Resizable Divider
             Divider()
+                .background(Color(NSColor.separatorColor))
+                .frame(height: 4)
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture()
+                        .onChanged { value in
+                            let delta = -value.translation.height // Negative because dragging up increases height
+                            let newHeight = geminiChatHeight + delta
+                            geminiChatHeight = max(minChatHeight, min(maxChatHeight, newHeight))
+                        }
+                )
+                .onHover { isHovering in
+                    if isHovering {
+                        NSCursor.resizeUpDown.push()
+                    } else {
+                        NSCursor.pop()
+                    }
+                }
             
-            // Gemini Chat Window (fixed at bottom, independent of scrolling)
+            // Gemini Chat Window (resizable height)
             GeminiChatView(
                 selectedSpreadsheets: selectedSpreadsheetsForGemini,
                 geminiAPIKey: $geminiCredentialManager.apiKey
             )
+            .frame(height: geminiChatHeight)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {

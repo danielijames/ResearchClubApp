@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import AppKit
 
 struct ChatMessage: Identifiable {
     let id: UUID
@@ -137,11 +138,46 @@ struct GeminiChatView: View {
             Divider()
             
             // Input Area
-            HStack(spacing: 12) {
-                TextField("Ask about your stock data...", text: $inputText, axis: .vertical)
-                    .textFieldStyle(.roundedBorder)
-                    .lineLimit(1...4)
-                    .disabled(isSending || geminiAPIKey.isEmpty || selectedSpreadsheets.isEmpty)
+            HStack(alignment: .bottom, spacing: 12) {
+                ZStack(alignment: .topLeading) {
+                    // Placeholder text
+                    if inputText.isEmpty {
+                        Text("Ask about your stock data...")
+                            .foregroundColor(Color(NSColor.placeholderTextColor))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 8)
+                    }
+                    
+                    // Multi-line text input
+                    TextEditor(text: $inputText)
+                        .font(.body)
+                        .frame(minHeight: 44, maxHeight: 88) // Twice as large (was ~44, now 88 max)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 4)
+                        .background(Color(NSColor.textBackgroundColor))
+                        .cornerRadius(6)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(Color(NSColor.separatorColor), lineWidth: 1)
+                        )
+                        .disabled(isSending || geminiAPIKey.isEmpty || selectedSpreadsheets.isEmpty)
+                        .onKeyPress(.return) {
+                            // Check if Shift is pressed using NSEvent
+                            if let currentEvent = NSApp.currentEvent, currentEvent.modifierFlags.contains(.shift) {
+                                // Shift+Enter: Insert newline (default behavior)
+                                return .ignored
+                            } else {
+                                // Enter: Send message
+                                if !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                                   !isSending,
+                                   !geminiAPIKey.isEmpty,
+                                   !selectedSpreadsheets.isEmpty {
+                                    sendMessage()
+                                }
+                                return .handled
+                            }
+                        }
+                }
                 
                 Button(action: sendMessage) {
                     if isSending {
@@ -157,7 +193,7 @@ struct GeminiChatView: View {
             .padding()
             .background(Color(NSColor.controlBackgroundColor))
         }
-        .frame(height: 300)
+        .frame(maxWidth: .infinity)
         .background(Color(NSColor.windowBackgroundColor))
         .onAppear {
             if messages.isEmpty && !selectedSpreadsheets.isEmpty {

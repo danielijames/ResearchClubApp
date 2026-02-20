@@ -10,50 +10,35 @@ import AppKit
 
 struct SpreadsheetTextView: View {
     let spreadsheet: SavedSpreadsheet
-    let onBack: () -> Void
     let onCopy: () -> Void
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Header
+        ScrollView {
             HStack {
-                Button(action: onBack) {
-                    HStack {
-                        Image(systemName: "chevron.left")
-                        Text("Back")
-                    }
-                }
-                .buttonStyle(.bordered)
-                
                 Spacer()
-                
-                Text("\(spreadsheet.displayName) - Text View")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                
-                Spacer()
-                
-                // Copy button
                 Button(action: onCopy) {
-                    Image(systemName: "doc.on.doc")
+                    HStack(spacing: 6) {
+                        Image(systemName: "doc.on.doc")
+                        Text("Copy")
+                    }
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color(NSColor.controlBackgroundColor))
+                    .cornerRadius(6)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(.plain)
                 .help("Copy to Clipboard")
+                .padding(.trailing, 16)
+                .padding(.top, 12)
             }
-            .padding()
-            .background(Color(NSColor.controlBackgroundColor))
             
-            Divider()
-            
-            // Text content
-            ScrollView {
-                Text(loadSpreadsheetText())
-                    .font(.system(.body, design: .monospaced))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding()
-                    .textSelection(.enabled)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            Text(loadSpreadsheetText())
+                .font(.system(.body, design: .monospaced))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+                .textSelection(.enabled)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

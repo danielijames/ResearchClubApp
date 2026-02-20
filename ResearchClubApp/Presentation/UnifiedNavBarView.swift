@@ -1,0 +1,81 @@
+//
+//  UnifiedNavBarView.swift
+//  ResearchClubApp
+//
+//  Created by Daniel James on 2/19/26.
+//
+
+import SwiftUI
+
+struct UnifiedNavBarView: View {
+    let title: String
+    let showDataAnalysisHub: Bool
+    let showBackButton: Bool
+    let onBack: (() -> Void)?
+    let onToggleDataAnalysisHub: () -> Void
+    let onRefresh: (() -> Void)?
+    
+    var body: some View {
+        HStack(spacing: 16) {
+            // Back button (if needed)
+            if showBackButton, let onBack = onBack {
+                Button(action: onBack) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 13))
+                        Text("Back")
+                            .font(.system(size: 13, weight: .medium))
+                    }
+                    .foregroundColor(.primary)
+                }
+                .buttonStyle(.plain)
+            }
+            
+            Spacer()
+            
+            // Title
+            Text(title)
+                .font(.system(size: 18, weight: .semibold, design: .rounded))
+                .foregroundColor(.primary)
+            
+            Spacer()
+            
+            // Action buttons
+            HStack(spacing: 12) {
+                // Ask Gemini! button
+                Button(action: onToggleDataAnalysisHub) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 13))
+                        Text("Ask Gemini!")
+                            .font(.system(size: 13, weight: .medium))
+                    }
+                    .foregroundColor(showDataAnalysisHub ? .white : .primary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(showDataAnalysisHub ? Color.purple : Color.clear)
+                    )
+                }
+                .buttonStyle(.plain)
+                
+                // Refresh button (if provided)
+                if let onRefresh = onRefresh {
+                    Button(action: onRefresh) {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 14))
+                            .foregroundColor(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .background(
+            Color(NSColor.controlBackgroundColor)
+                .shadow(color: .black.opacity(0.05), radius: 1, y: 1)
+        )
+    }
+}

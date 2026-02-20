@@ -55,4 +55,11 @@ protocol MassiveRepository {
     /// - Parameter ticker: Stock ticker symbol
     /// - Returns: The most recent quote, or nil if not available
     func getLatestQuote(ticker: String) async throws -> StockQuote?
+    
+    /// Fetches detailed ticker information including market cap, float, and company details
+    /// - Parameters:
+    ///   - ticker: Stock ticker symbol (e.g., "AAPL")
+    ///   - date: Optional date for point-in-time ticker information (defaults to most recent)
+    /// - Returns: Ticker details including market cap, shares outstanding, company info, etc.
+    func getTickerDetails(ticker: String, date: Date?) async throws -> TickerDetails
 }

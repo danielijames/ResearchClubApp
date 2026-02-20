@@ -31,26 +31,30 @@ class StockDataViewModel: ObservableObject {
     }()
     @Published var granularity: AggregateGranularity = .fiveMinutes // Default to 5 minutes
     @Published var aggregates: [StockAggregate] = []
+    @Published var tickerDetails: TickerDetails?
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
     
     private var getStockAggregatesUseCase: GetStockAggregatesUseCase
+    private var repository: any MassiveRepository
     
-    init(getStockAggregatesUseCase: GetStockAggregatesUseCase) {
+    init(getStockAggregatesUseCase: GetStockAggregatesUseCase, repository: any MassiveRepository) {
         self.getStockAggregatesUseCase = getStockAggregatesUseCase
+        self.repository = repository
     }
     
     /// Convenience initializer that creates a use case from a repository
     /// This is useful for dependency injection at the app level
     convenience init(repository: any MassiveRepository) {
         let useCase = GetStockAggregatesUseCase(repository: repository)
-        self.init(getStockAggregatesUseCase: useCase)
+        self.init(getStockAggregatesUseCase: useCase, repository: repository)
     }
     
     /// Updates the use case with a new repository
     /// This allows switching between mock and real repositories at runtime
     func updateRepository(_ repository: any MassiveRepository) {
         self.getStockAggregatesUseCase = GetStockAggregatesUseCase(repository: repository)
+        self.repository = repository
     }
     
     func fetchStockData() async {
@@ -74,10 +78,24 @@ class StockDataViewModel: ObservableObject {
             )
             
             aggregates = fetchedAggregates
+            
+            // Fetch ticker details in parallel
+            Task {
+                do {
+                    let details = try await repository.getTickerDetails(ticker: ticker, date: nil)
+                    await MainActor.run {
+                        tickerDetails = details
+                    }
+                } catch {
+                    // Don't fail the whole request if ticker details fail
+                    print("⚠️ Failed to fetch ticker details: \(error.localizedDescription)")
+                }
+            }
         } catch {
             // Presentation logic: Format error for display
             errorMessage = error.localizedDescription
             aggregates = []
+            tickerDetails = nil
         }
         
         isLoading = false

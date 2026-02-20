@@ -11,6 +11,7 @@ import AppKit
 struct StockDataResultsView: View {
     let aggregates: [StockAggregate]
     let ticker: String
+    let tickerDetails: TickerDetails?
     
     @State private var sortOrder = [KeyPathComparator(\StockAggregate.timestamp)]
     
@@ -27,7 +28,7 @@ struct StockDataResultsView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Header
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Stock Data: \(ticker)")
@@ -38,6 +39,51 @@ struct StockDataResultsView: View {
                             .foregroundColor(.secondary)
                     }
                     Spacer()
+                }
+                
+                // Ticker Details Section
+                if let details = tickerDetails {
+                    Divider()
+                    
+                    HStack(spacing: 24) {
+                        // Market Cap
+                        if let marketCap = details.formattedMarketCap {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Market Cap")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Text(marketCap)
+                                    .font(.headline)
+                                    .foregroundColor(.primary)
+                            }
+                        }
+                        
+                        // Shares Outstanding (Float)
+                        if let sharesOutstanding = details.formattedSharesOutstanding {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Float")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Text(sharesOutstanding)
+                                    .font(.headline)
+                                    .foregroundColor(.primary)
+                            }
+                        }
+                        
+                        // Weighted Shares Outstanding
+                        if let weightedShares = details.formattedWeightedSharesOutstanding {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Weighted Shares")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Text(weightedShares)
+                                    .font(.headline)
+                                    .foregroundColor(.primary)
+                            }
+                        }
+                        
+                        Spacer()
+                    }
                 }
             }
             .padding()
@@ -158,6 +204,7 @@ struct StockDataResultsView: View {
                 granularityMinutes: 5
             )
         ],
-        ticker: "AAPL"
+        ticker: "AAPL",
+        tickerDetails: nil
     )
 }

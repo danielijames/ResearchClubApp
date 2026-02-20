@@ -13,6 +13,7 @@ struct SearchQuery: Identifiable, Equatable {
     let date: Date
     let granularity: AggregateGranularity
     let aggregates: [StockAggregate]
+    let tickerDetails: TickerDetails?
     let timestamp: Date // When the search was performed
     
     init(
@@ -21,6 +22,7 @@ struct SearchQuery: Identifiable, Equatable {
         date: Date,
         granularity: AggregateGranularity,
         aggregates: [StockAggregate],
+        tickerDetails: TickerDetails? = nil,
         timestamp: Date = Date()
     ) {
         self.id = id
@@ -28,6 +30,7 @@ struct SearchQuery: Identifiable, Equatable {
         self.date = date
         self.granularity = granularity
         self.aggregates = aggregates
+        self.tickerDetails = tickerDetails
         self.timestamp = timestamp
     }
     

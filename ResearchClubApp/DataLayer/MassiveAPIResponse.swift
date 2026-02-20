@@ -48,3 +48,70 @@ struct AggregateResult: Codable {
         case transactionCount = "n"
     }
 }
+
+/// Response model for Massive API ticker details endpoint (GET /v3/reference/tickers/{ticker})
+struct MassiveTickerDetailsResponse: Codable {
+    let results: TickerDetailsResult?
+    
+    enum CodingKeys: String, CodingKey {
+        case results = "results"
+    }
+}
+
+/// Ticker details result from Massive API
+struct TickerDetailsResult: Codable {
+    let ticker: String
+    let name: String?
+    let description: String?
+    let marketCap: Double?
+    let shareClassSharesOutstanding: Int64?
+    let weightedSharesOutstanding: Int64?
+    let primaryExchange: String?
+    let currencyName: String?
+    let currencySymbol: String?
+    let sicCode: String?
+    let sicDescription: String?
+    let homepageUrl: String?
+    let phoneNumber: String?
+    let address: Address?
+    let listDate: String? // ISO 8601 date string
+    let delistedUtc: String? // ISO 8601 date string
+    let active: Bool?
+    
+    enum CodingKeys: String, CodingKey {
+        case ticker
+        case name
+        case description
+        case marketCap = "market_cap"
+        case shareClassSharesOutstanding = "share_class_shares_outstanding"
+        case weightedSharesOutstanding = "weighted_shares_outstanding"
+        case primaryExchange = "primary_exchange"
+        case currencyName = "currency_name"
+        case currencySymbol = "currency_symbol"
+        case sicCode = "sic_code"
+        case sicDescription = "sic_description"
+        case homepageUrl = "homepage_url"
+        case phoneNumber = "phone_number"
+        case address
+        case listDate = "list_date"
+        case delistedUtc = "delisted_utc"
+        case active
+    }
+}
+
+/// Address information from Massive API
+struct Address: Codable {
+    let address1: String?
+    let city: String?
+    let state: String?
+    let postalCode: String?
+    let country: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case address1
+        case city
+        case state
+        case postalCode = "postal_code"
+        case country
+    }
+}

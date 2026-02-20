@@ -311,7 +311,7 @@ struct ContentView: View {
             position: nextItemPosition,
             size: CGSize(width: 700, height: 600),
             title: "\(ticker) Data - \(granularity.displayName)",
-            content: .stockData(aggregates: aggregates, ticker: ticker, granularity: granularity),
+            content: .stockData(aggregates: aggregates, ticker: ticker, granularity: granularity, tickerDetails: viewModel.tickerDetails),
             zIndex: canvasItems.count
         )
         
@@ -355,7 +355,8 @@ struct ContentView: View {
             ticker: ticker,
             date: date,
             granularity: granularity,
-            aggregates: aggregates
+            aggregates: aggregates,
+            tickerDetails: viewModel.tickerDetails
         )
         
         withAnimation {
@@ -524,7 +525,8 @@ struct ContentView: View {
                     // Data view
                     StockDataResultsView(
                         aggregates: query.aggregates,
-                        ticker: query.ticker
+                        ticker: query.ticker,
+                        tickerDetails: query.tickerDetails
                     )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }

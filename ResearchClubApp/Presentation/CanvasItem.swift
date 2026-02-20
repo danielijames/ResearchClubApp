@@ -37,7 +37,7 @@ struct CanvasItem: Identifiable, Equatable {
 }
 
 enum CanvasItemContent: Equatable {
-    case stockData(aggregates: [StockAggregate], ticker: String, granularity: AggregateGranularity)
+    case stockData(aggregates: [StockAggregate], ticker: String, granularity: AggregateGranularity, tickerDetails: TickerDetails?)
     case chart(aggregates: [StockAggregate], ticker: String, chartType: ChartType)
 }
 
@@ -234,8 +234,8 @@ struct CanvasItemView: View {
     @ViewBuilder
     private var contentView: some View {
         switch currentItem.content {
-        case .stockData(let aggregates, let ticker, _):
-            StockDataResultsView(aggregates: aggregates, ticker: ticker)
+        case .stockData(let aggregates, let ticker, _, let tickerDetails):
+            StockDataResultsView(aggregates: aggregates, ticker: ticker, tickerDetails: tickerDetails)
         case .chart(let aggregates, let ticker, let chartType):
             StockChartView(aggregates: aggregates, ticker: ticker, initialChartType: chartType)
         }

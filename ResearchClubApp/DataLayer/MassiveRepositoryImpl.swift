@@ -211,12 +211,64 @@ class MassiveRepositoryImpl: MassiveRepository {
     func getLatestQuote(ticker: String) async throws -> StockQuote? {
         // Get quotes from the last hour
         let endDate = Date()
-        guard let startDate = Calendar.current.date(byAdding: .hour, value: -1, to: endDate) else {
-            throw MassiveRepositoryError.invalidDate
-        }
-        
+        let startDate = Calendar.current.date(byAdding: .hour, value: -1, to: endDate) ?? endDate
         let quotes = try await getQuotes(ticker: ticker, startDate: startDate, endDate: endDate, limit: 1)
         return quotes.first
+    }
+    
+    // MARK: - Ticker Details
+    
+    func getTickerDetails(ticker: String, date: Date?) async throws -> TickerDetails {
+        // Massive API endpoint: GET /v3/reference/tickers/{ticker}
+        let tickerUpper = ticker.uppercased()
+        var urlString = "\(baseURL)/v3/reference/tickers/\(tickerUpper)"
+        
+        var components = URLComponents(string: urlString)
+        var queryItems: [URLQueryItem] = []
+        
+        // Add date parameter if provided (for point-in-time queries)
+        if let date = date {
+            let dateFormatter = ISO8601DateFormatter()
+            dateFormatter.formatOptions = [.withFullDate]
+            queryItems.append(URLQueryItem(name: "date", value: dateFormatter.string(from: date)))
+        }
+        
+        queryItems.append(URLQueryItem(name: "apikey", value: apiKey))
+        components?.queryItems = queryItems
+        
+        guard let url = components?.url else {
+            throw MassiveRepositoryError.invalidURL
+        }
+        
+        var request = URLRequest(url: url)
+        request.setValue(apiKey, forHTTPHeaderField: "X-API-KEY")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.httpMethod = "GET"
+        request.timeoutInterval = 30.0
+        
+        let (data, response) = try await session.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw MassiveRepositoryError.invalidResponse
+        }
+        
+        guard (200...299).contains(httpResponse.statusCode) else {
+            throw MassiveRepositoryError.apiError(statusCode: httpResponse.statusCode)
+        }
+        
+        let decoder = JSONDecoder()
+        let apiResponse = try decoder.decode(MassiveTickerDetailsResponse.self, from: data)
+        
+        guard let result = apiResponse.results else {
+            throw MassiveRepositoryError.invalidResponse
+        }
+        
+        return TickerDetails(
+            ticker: result.ticker,
+            marketCap: result.marketCap,
+            shareClassSharesOutstanding: result.shareClassSharesOutstanding,
+            weightedSharesOutstanding: result.weightedSharesOutstanding
+        )
     }
 }
 

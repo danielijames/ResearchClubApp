@@ -86,4 +86,14 @@ class MockMassiveRepository: MassiveRepository {
         // Mock implementation
         return nil
     }
+    
+    func getTickerDetails(ticker: String, date: Date?) async throws -> TickerDetails {
+        // Mock implementation - return sample data
+        return TickerDetails(
+            ticker: ticker.uppercased(),
+            marketCap: 1_500_000_000_000, // $1.5T
+            shareClassSharesOutstanding: 15_000_000_000, // 15B shares
+            weightedSharesOutstanding: 15_000_000_000
+        )
+    }
 }

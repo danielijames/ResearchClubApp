@@ -116,22 +116,30 @@ class GeminiService {
     func sendMessage(
         userMessage: String,
         context: String,
+        conversationHistory: [GeminiMessage] = [],
         systemInstruction: String? = nil
     ) async throws -> String {
         // Build system instruction with context about the spreadsheets
         let systemPrompt = buildSystemPrompt(context: context, customInstruction: systemInstruction)
         
-        // Combine context and user message into a single user message
-        let combinedMessage = "\(systemPrompt)\n\nUser question: \(userMessage)"
-        
-        let userMsg = GeminiMessage(
-            role: "user",
-            parts: [GeminiPart(text: combinedMessage)]
+        // Create system instruction object
+        let systemInstructionObj = GeminiSystemInstruction(
+            parts: [GeminiPart(text: systemPrompt)]
         )
         
+        // Send ONLY the user's message (no appended text)
+        let userMsg = GeminiMessage(
+            role: "user",
+            parts: [GeminiPart(text: userMessage)]
+        )
+        
+        // Build conversation history: previous messages + current user message
+        var contents = conversationHistory
+        contents.append(userMsg)
+        
         let request = GeminiRequest(
-            contents: [userMsg],
-            systemInstruction: nil
+            contents: contents,
+            systemInstruction: systemInstructionObj
         )
         
         // Build URL

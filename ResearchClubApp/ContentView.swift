@@ -183,14 +183,26 @@ struct ContentView: View {
                             .disableAutocorrection(true)
                     }
                     
-                    // Date Picker
+                    // Start Date Picker
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Date")
+                        Text("Start Date")
                             .font(.headline)
                         DatePicker(
-                            "Select Date",
-                            selection: $viewModel.selectedDate,
-                            displayedComponents: .date
+                            "Start Date",
+                            selection: $viewModel.startDate,
+                            displayedComponents: [.date, .hourAndMinute]
+                        )
+                        .datePickerStyle(.compact)
+                    }
+                    
+                    // End Date Picker
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("End Date")
+                            .font(.headline)
+                        DatePicker(
+                            "End Date",
+                            selection: $viewModel.endDate,
+                            displayedComponents: [.date, .hourAndMinute]
                         )
                         .datePickerStyle(.compact)
                     }
@@ -331,7 +343,8 @@ struct ContentView: View {
         let ticker = viewModel.ticker.uppercased()
         let aggregates = viewModel.aggregates
         let granularity = viewModel.granularity
-        let date = viewModel.selectedDate
+        // Use startDate as the primary date for display purposes
+        let date = viewModel.startDate
         
         guard !aggregates.isEmpty else {
             print("⚠️ No aggregates to display")
@@ -357,7 +370,8 @@ struct ContentView: View {
         let ticker = viewModel.ticker.uppercased()
         let aggregates = viewModel.aggregates
         let granularity = viewModel.granularity
-        let date = viewModel.selectedDate
+        // Use startDate as the primary date for spreadsheet naming/display
+        let date = viewModel.startDate
         
         guard !aggregates.isEmpty else {
             print("⚠️ No aggregates to save")

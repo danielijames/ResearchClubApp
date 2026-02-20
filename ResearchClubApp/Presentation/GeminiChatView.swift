@@ -242,10 +242,15 @@ struct GeminiChatView: View {
                 // Load selected spreadsheets data
                 let context = await loadSelectedSpreadsheetsData()
                 
-                // Send to Gemini
+                // Build conversation history from previous messages (excluding welcome message)
+                // Convert ChatMessage to GeminiMessage format for API
+                let conversationHistory = buildConversationHistory()
+                
+                // Send to Gemini - only the user's message, with conversation history for context
                 let response = try await service.sendMessage(
                     userMessage: userMessage,
-                    context: context
+                    context: context,
+                    conversationHistory: conversationHistory
                 )
                 
                 // Add assistant response
@@ -260,6 +265,33 @@ struct GeminiChatView: View {
                 }
             }
         }
+    }
+    
+    private func buildConversationHistory() -> [GeminiMessage] {
+        // Convert ChatMessage array to GeminiMessage array for API
+        // Skip the welcome message (first assistant message) and only include actual conversation
+        var history: [GeminiMessage] = []
+        
+        for message in messages {
+            // Skip welcome messages (they're not part of the conversation context)
+            if message.role == .assistant && message.content.contains("I have access to") {
+                continue
+            }
+            
+            let geminiRole = message.role == .user ? "user" : "model"
+            let geminiMessage = GeminiMessage(
+                role: geminiRole,
+                parts: [GeminiPart(text: message.content)]
+            )
+            history.append(geminiMessage)
+        }
+        
+        // Remove the last message (current user message) as it will be added separately
+        if let lastMessage = history.last, lastMessage.role == "user" {
+            history.removeLast()
+        }
+        
+        return history
     }
     
     private func loadSelectedSpreadsheetsData() async -> String {

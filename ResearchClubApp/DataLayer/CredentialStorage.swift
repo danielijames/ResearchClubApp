@@ -85,6 +85,11 @@ class CredentialStorage {
         }
         
         guard status == errSecSuccess else {
+            // If authentication failed, return nil instead of throwing
+            // This prevents repeated prompts - user needs to re-enter key
+            if status == errSecAuthFailed {
+                return nil
+            }
             throw CredentialStorageError.retrievalFailed(status)
         }
         
@@ -179,6 +184,11 @@ class CredentialStorage {
         }
         
         guard status == errSecSuccess else {
+            // If authentication failed, return nil instead of throwing
+            // This prevents repeated prompts - user needs to re-enter key
+            if status == errSecAuthFailed {
+                return nil
+            }
             throw CredentialStorageError.retrievalFailed(status)
         }
         

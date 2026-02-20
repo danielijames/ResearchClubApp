@@ -20,10 +20,9 @@ struct ContentView: View {
     @State private var savedSpreadsheets: [SavedSpreadsheet] = []
     @State private var showDataAnalysisHub: Bool = false
     @State private var selectedSpreadsheetForText: SavedSpreadsheet?
-    @State private var geminiAPIKey: String = ""
+    @StateObject private var geminiCredentialManager = GeminiCredentialManager()
     
     private let spreadsheetExporter = SpreadsheetExporter()
-    private let credentialStorage = CredentialStorage()
     
     init() {
         // Initialize with mock repository by default
@@ -58,8 +57,6 @@ struct ContentView: View {
             updateRepository()
             // Load saved spreadsheets immediately
             loadSavedSpreadsheets()
-            // Load Gemini API key
-            loadGeminiAPIKey()
         }
     }
     
@@ -104,11 +101,24 @@ struct ContentView: View {
                             Text("Gemini API Key")
                                 .font(.subheadline)
                                 .fontWeight(.semibold)
-                            SecureField("Enter Gemini API key", text: $geminiAPIKey)
+                            
+                            SecureField("Enter Gemini API key", text: $geminiCredentialManager.apiKey)
                                 .textFieldStyle(.roundedBorder)
-                                .onChange(of: geminiAPIKey) { _, newValue in
-                                    saveGeminiAPIKey(newValue)
+                                .onChange(of: geminiCredentialManager.apiKey) { _, _ in
+                                    if geminiCredentialManager.saveCredentials {
+                                        try? geminiCredentialManager.saveCredentialsIfNeeded()
+                                    }
                                 }
+                            
+                            Toggle("Save Gemini API key securely", isOn: $geminiCredentialManager.saveCredentials)
+                                .onChange(of: geminiCredentialManager.saveCredentials) { _, newValue in
+                                    if newValue {
+                                        try? geminiCredentialManager.saveCredentialsIfNeeded()
+                                    } else {
+                                        geminiCredentialManager.deleteSavedCredentials()
+                                    }
+                                }
+                            
                             Text("Get your free API key at https://aistudio.google.com/apikey")
                                 .font(.caption2)
                                 .foregroundColor(.secondary)
@@ -375,20 +385,6 @@ struct ContentView: View {
         savedSpreadsheets = spreadsheetExporter.getAllSavedSpreadsheets()
     }
     
-    private func loadGeminiAPIKey() {
-        if let apiKey = try? credentialStorage.getGeminiAPIKey() {
-            geminiAPIKey = apiKey
-        }
-    }
-    
-    private func saveGeminiAPIKey(_ apiKey: String) {
-        if apiKey.isEmpty {
-            credentialStorage.deleteGeminiAPIKey()
-        } else {
-            try? credentialStorage.saveGeminiAPIKey(apiKey)
-        }
-    }
-    
     // MARK: - List View
     
     private var listView: some View {
@@ -649,7 +645,7 @@ struct ContentView: View {
             // Gemini Chat Window (fixed at bottom, independent of scrolling)
             GeminiChatView(
                 selectedSpreadsheets: selectedSpreadsheetsForGemini,
-                geminiAPIKey: $geminiAPIKey
+                geminiAPIKey: $geminiCredentialManager.apiKey
             )
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

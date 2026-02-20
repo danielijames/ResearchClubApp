@@ -20,8 +20,10 @@ struct ContentView: View {
     @State private var savedSpreadsheets: [SavedSpreadsheet] = []
     @State private var showDataAnalysisHub: Bool = false
     @State private var selectedSpreadsheetForText: SavedSpreadsheet?
+    @State private var geminiAPIKey: String = ""
     
     private let spreadsheetExporter = SpreadsheetExporter()
+    private let credentialStorage = CredentialStorage()
     
     init() {
         // Initialize with mock repository by default
@@ -56,6 +58,8 @@ struct ContentView: View {
             updateRepository()
             // Load saved spreadsheets immediately
             loadSavedSpreadsheets()
+            // Load Gemini API key
+            loadGeminiAPIKey()
         }
     }
     
@@ -93,6 +97,25 @@ struct ContentView: View {
                     .buttonStyle(.bordered)
                     .padding(.horizontal)
                     .padding(.top, 4)
+                    
+                    // Gemini API Key Input (only show in Data Analysis Hub)
+                    if showDataAnalysisHub {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Gemini API Key")
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                            SecureField("Enter Gemini API key", text: $geminiAPIKey)
+                                .textFieldStyle(.roundedBorder)
+                                .onChange(of: geminiAPIKey) { _, newValue in
+                                    saveGeminiAPIKey(newValue)
+                                }
+                            Text("Get your free API key at https://aistudio.google.com/apikey")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.horizontal)
+                        .padding(.top, 8)
+                    }
                 }
                 .padding(.top)
                 
@@ -352,6 +375,20 @@ struct ContentView: View {
         savedSpreadsheets = spreadsheetExporter.getAllSavedSpreadsheets()
     }
     
+    private func loadGeminiAPIKey() {
+        if let apiKey = try? credentialStorage.getGeminiAPIKey() {
+            geminiAPIKey = apiKey
+        }
+    }
+    
+    private func saveGeminiAPIKey(_ apiKey: String) {
+        if apiKey.isEmpty {
+            credentialStorage.deleteGeminiAPIKey()
+        } else {
+            try? credentialStorage.saveGeminiAPIKey(apiKey)
+        }
+    }
+    
     // MARK: - List View
     
     private var listView: some View {
@@ -523,7 +560,7 @@ struct ContentView: View {
             
             Divider()
             
-            // List of spreadsheets
+            // List of spreadsheets (scrollable)
             if savedSpreadsheets.isEmpty {
                 VStack(spacing: 20) {
                     Spacer()
@@ -606,11 +643,23 @@ struct ContentView: View {
                 }
                 .listStyle(.inset(alternatesRowBackgrounds: true))
             }
+            
+            Divider()
+            
+            // Gemini Chat Window (fixed at bottom, independent of scrolling)
+            GeminiChatView(
+                selectedSpreadsheets: selectedSpreadsheetsForGemini,
+                geminiAPIKey: $geminiAPIKey
+            )
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
             loadSavedSpreadsheets()
         }
+    }
+    
+    private var selectedSpreadsheetsForGemini: [SavedSpreadsheet] {
+        savedSpreadsheets.filter { $0.isSelectedForLLM }
     }
     
     private func deleteSpreadsheet(_ spreadsheet: SavedSpreadsheet) {

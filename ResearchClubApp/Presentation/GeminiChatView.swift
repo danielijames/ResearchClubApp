@@ -304,7 +304,8 @@ struct ChatBubbleView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
-                Text(message.content)
+                // Render markdown content
+                markdownText(message.content)
                     .padding(12)
                     .background(
                         message.role == .user
@@ -319,5 +320,82 @@ struct ChatBubbleView: View {
                 Spacer(minLength: 60)
             }
         }
+    }
+    
+    @ViewBuilder
+    private func markdownText(_ content: String) -> some View {
+        // Convert HTML to markdown if needed, then render as markdown
+        let markdownContent = convertHTMLToMarkdown(content)
+        
+        // SwiftUI Text supports markdown in macOS 12+
+        if let attributedString = try? AttributedString(markdown: markdownContent) {
+            Text(attributedString)
+        } else {
+            // Fallback to plain text if markdown parsing fails
+            Text(content)
+        }
+    }
+    
+    private func convertHTMLToMarkdown(_ html: String) -> String {
+        var markdown = html
+        
+        // Convert common HTML tags to markdown
+        // Headers
+        markdown = markdown.replacingOccurrences(of: "<h1>", with: "# ")
+        markdown = markdown.replacingOccurrences(of: "</h1>", with: "\n\n")
+        markdown = markdown.replacingOccurrences(of: "<h2>", with: "## ")
+        markdown = markdown.replacingOccurrences(of: "</h2>", with: "\n\n")
+        markdown = markdown.replacingOccurrences(of: "<h3>", with: "### ")
+        markdown = markdown.replacingOccurrences(of: "</h3>", with: "\n\n")
+        
+        // Bold and italic
+        markdown = markdown.replacingOccurrences(of: "<strong>", with: "**")
+        markdown = markdown.replacingOccurrences(of: "</strong>", with: "**")
+        markdown = markdown.replacingOccurrences(of: "<b>", with: "**")
+        markdown = markdown.replacingOccurrences(of: "</b>", with: "**")
+        markdown = markdown.replacingOccurrences(of: "<em>", with: "*")
+        markdown = markdown.replacingOccurrences(of: "</em>", with: "*")
+        markdown = markdown.replacingOccurrences(of: "<i>", with: "*")
+        markdown = markdown.replacingOccurrences(of: "</i>", with: "*")
+        
+        // Code blocks
+        markdown = markdown.replacingOccurrences(of: "<code>", with: "`")
+        markdown = markdown.replacingOccurrences(of: "</code>", with: "`")
+        markdown = markdown.replacingOccurrences(of: "<pre>", with: "```\n")
+        markdown = markdown.replacingOccurrences(of: "</pre>", with: "\n```")
+        
+        // Lists
+        markdown = markdown.replacingOccurrences(of: "<ul>", with: "")
+        markdown = markdown.replacingOccurrences(of: "</ul>", with: "\n")
+        markdown = markdown.replacingOccurrences(of: "<ol>", with: "")
+        markdown = markdown.replacingOccurrences(of: "</ol>", with: "\n")
+        markdown = markdown.replacingOccurrences(of: "<li>", with: "- ")
+        markdown = markdown.replacingOccurrences(of: "</li>", with: "\n")
+        
+        // Paragraphs and line breaks
+        markdown = markdown.replacingOccurrences(of: "<p>", with: "")
+        markdown = markdown.replacingOccurrences(of: "</p>", with: "\n\n")
+        markdown = markdown.replacingOccurrences(of: "<br>", with: "\n")
+        markdown = markdown.replacingOccurrences(of: "<br/>", with: "\n")
+        markdown = markdown.replacingOccurrences(of: "<br />", with: "\n")
+        
+        // Links
+        markdown = markdown.replacingOccurrences(
+            of: "<a href=\"([^\"]+)\">([^<]+)</a>",
+            with: "[$2]($1)",
+            options: .regularExpression
+        )
+        
+        // Remove any remaining HTML tags
+        markdown = markdown.replacingOccurrences(
+            of: "<[^>]+>",
+            with: "",
+            options: .regularExpression
+        )
+        
+        // Clean up extra whitespace
+        markdown = markdown.replacingOccurrences(of: "\n\n\n+", with: "\n\n", options: .regularExpression)
+        
+        return markdown.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }

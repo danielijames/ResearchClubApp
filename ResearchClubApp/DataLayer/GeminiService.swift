@@ -237,7 +237,15 @@ class GeminiService {
         - Potential anomalies or unusual patterns
         - Correlations between different metrics
         
-        Be specific and reference actual data points when possible. Format your response clearly with bullet points or numbered lists.
+        IMPORTANT: Format your response using Markdown syntax. Use:
+        - **bold** for emphasis
+        - *italic* for subtle emphasis
+        - `code` for data values or technical terms
+        - ## Headers for major sections
+        - Bullet points (-) or numbered lists (1.) for lists
+        - Tables using markdown table syntax when presenting data comparisons
+        
+        Be specific and reference actual data points when possible. Do NOT use HTML tags - use Markdown only.
         """
         
         if let customInstruction = customInstruction {

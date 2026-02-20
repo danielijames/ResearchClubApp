@@ -27,62 +27,117 @@ struct StockDataResultsView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Header
+            // Modern Header
             VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Stock Data: \(ticker)")
-                            .font(.title2)
-                            .fontWeight(.bold)
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack(spacing: 8) {
+                            Text(ticker.uppercased())
+                                .font(.system(size: 24, weight: .bold, design: .rounded))
+                                .foregroundColor(.primary)
+                            
+                            if !aggregates.isEmpty, let first = aggregates.first, let last = aggregates.last {
+                                let change = last.close - first.open
+                                let changePercent = (change / first.open) * 100
+                                let isPositive = change >= 0
+                                
+                                HStack(spacing: 4) {
+                                    Image(systemName: isPositive ? "arrow.up.right" : "arrow.down.right")
+                                        .font(.system(size: 12, weight: .semibold))
+                                    Text(String(format: "%.2f%%", abs(changePercent)))
+                                        .font(.system(size: 14, weight: .semibold))
+                                }
+                                .foregroundColor(isPositive ? .green : .red)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .fill((isPositive ? Color.green : Color.red).opacity(0.1))
+                                )
+                            }
+                        }
+                        
                         Text("\(aggregates.count) \(granularityDisplay) aggregates")
-                            .font(.subheadline)
+                            .font(.system(size: 13))
                             .foregroundColor(.secondary)
                     }
                     Spacer()
                 }
                 
-                // Ticker Details Section
+                // Ticker Details Section - Modern Cards
                 if let details = tickerDetails {
                     Divider()
+                        .padding(.vertical, 8)
                     
-                    HStack(spacing: 24) {
-                        // Market Cap
+                    HStack(spacing: 12) {
+                        // Market Cap Card
                         if let marketCap = details.formattedMarketCap {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Market Cap")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                Text(marketCap)
-                                    .font(.headline)
-                                    .foregroundColor(.primary)
+                            HStack(spacing: 8) {
+                                Image(systemName: "dollarsign.circle.fill")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.blue)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Market Cap")
+                                        .font(.system(size: 11, weight: .medium))
+                                        .foregroundColor(.secondary)
+                                        .textCase(.uppercase)
+                                        .tracking(0.5)
+                                    Text(marketCap)
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(.primary)
+                                }
                             }
+                            .padding(12)
+                            .frame(maxWidth: .infinity)
+                            .background(Color(NSColor.controlBackgroundColor))
+                            .cornerRadius(8)
                         }
                         
-                        // Shares Outstanding (Float)
+                        // Float Card
                         if let sharesOutstanding = details.formattedSharesOutstanding {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Float")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                Text(sharesOutstanding)
-                                    .font(.headline)
-                                    .foregroundColor(.primary)
+                            HStack(spacing: 8) {
+                                Image(systemName: "chart.bar.fill")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.green)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Float")
+                                        .font(.system(size: 11, weight: .medium))
+                                        .foregroundColor(.secondary)
+                                        .textCase(.uppercase)
+                                        .tracking(0.5)
+                                    Text(sharesOutstanding)
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(.primary)
+                                }
                             }
+                            .padding(12)
+                            .frame(maxWidth: .infinity)
+                            .background(Color(NSColor.controlBackgroundColor))
+                            .cornerRadius(8)
                         }
                         
-                        // Weighted Shares Outstanding
+                        // Weighted Shares Card
                         if let weightedShares = details.formattedWeightedSharesOutstanding {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Weighted Shares")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                Text(weightedShares)
-                                    .font(.headline)
-                                    .foregroundColor(.primary)
+                            HStack(spacing: 8) {
+                                Image(systemName: "scalemass.fill")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.purple)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Weighted")
+                                        .font(.system(size: 11, weight: .medium))
+                                        .foregroundColor(.secondary)
+                                        .textCase(.uppercase)
+                                        .tracking(0.5)
+                                    Text(weightedShares)
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(.primary)
+                                }
                             }
+                            .padding(12)
+                            .frame(maxWidth: .infinity)
+                            .background(Color(NSColor.controlBackgroundColor))
+                            .cornerRadius(8)
                         }
-                        
-                        Spacer()
                     }
                 }
             }

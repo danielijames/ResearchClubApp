@@ -11,7 +11,6 @@ import AppKit
 struct ContentView: View {
     @StateObject private var credentialManager = CredentialManager()
     @StateObject private var viewModel: StockDataViewModel
-    @State private var useMockData: Bool = true
     @State private var canvasItems: [CanvasItem] = []
     @State private var nextItemPosition: CGPoint = CGPoint(x: 400, y: 300)
     @State private var isCanvasMode: Bool = false
@@ -22,40 +21,52 @@ struct ContentView: View {
     @State private var selectedSpreadsheetForText: SavedSpreadsheet?
     @StateObject private var geminiCredentialManager = GeminiCredentialManager()
     @State private var geminiChatWidth: CGFloat = 0 // Will be set to 50% of screen width
+    @State private var showSettings = false
     
     private let spreadsheetExporter = SpreadsheetExporter()
     private let minChatWidth: CGFloat = 300
     private let maxChatWidth: CGFloat = 800
     
     init() {
-        // Initialize with mock repository by default
+        // Initialize with real repository if credentials are available, otherwise nil
         // Will be updated when credentials are provided
-        let repository = MockMassiveRepository()
+        let repository = CredentialManager().createRepository() ?? MassiveRepositoryImpl(apiKey: "")
         _viewModel = StateObject(wrappedValue: StockDataViewModel(repository: repository))
     }
     
     var body: some View {
-        NavigationSplitView(columnVisibility: .constant(.doubleColumn)) {
-            // Left Sidebar: Input Controls
-            sidebarView
-                .navigationSplitViewColumnWidth(min: 300, ideal: 350, max: 500)
-        } detail: {
-            // Right Detail: Canvas View, List View, Data Analysis Hub, or Text View
-            if let selectedSpreadsheet = selectedSpreadsheetForText {
-                spreadsheetTextView(spreadsheet: selectedSpreadsheet)
-            } else if showDataAnalysisHub {
-                dataAnalysisHubView
-            } else if isCanvasMode {
-                CanvasView(items: $canvasItems)
-            } else {
-                listView
+        VStack(spacing: 0) {
+            // Modern Header
+            modernHeaderView
+            
+            NavigationSplitView(columnVisibility: .constant(.doubleColumn)) {
+                // Left Sidebar: Input Controls
+                sidebarView
+                    .navigationSplitViewColumnWidth(min: 300, ideal: 350, max: 500)
+            } detail: {
+                // Right Detail: Canvas View, List View, Data Analysis Hub, or Text View
+                if let selectedSpreadsheet = selectedSpreadsheetForText {
+                    spreadsheetTextView(spreadsheet: selectedSpreadsheet)
+                } else if showDataAnalysisHub {
+                    dataAnalysisHubView
+                } else if isCanvasMode {
+                    CanvasView(items: $canvasItems)
+                } else {
+                    listView
+                }
             }
         }
+        .sheet(isPresented: $showSettings) {
+            SettingsView(
+                credentialManager: credentialManager,
+                geminiCredentialManager: geminiCredentialManager,
+                isPresented: $showSettings,
+                onUpdate: {
+                    updateRepository()
+                }
+            )
+        }
         .onAppear {
-            // If credentials were loaded, use real API instead of mock
-            if credentialManager.hasValidCredentials && credentialManager.saveCredentials {
-                useMockData = false
-            }
             // Update repository with current settings
             updateRepository()
             // Load saved spreadsheets immediately
@@ -63,167 +74,160 @@ struct ContentView: View {
         }
     }
     
+    // MARK: - Modern Header
+    
+    private var modernHeaderView: some View {
+        HStack(spacing: 16) {
+            // Settings Button (prominent)
+            Button(action: {
+                showSettings = true
+            }) {
+                HStack(spacing: 8) {
+                    Image(systemName: "gearshape.fill")
+                        .font(.system(size: 16, weight: .medium))
+                    Text("Settings")
+                        .font(.system(size: 15, weight: .semibold))
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.blue, Color.blue.opacity(0.8)],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                )
+                .shadow(color: .blue.opacity(0.3), radius: 4, x: 0, y: 2)
+            }
+            .buttonStyle(.plain)
+            
+            Spacer()
+            
+            // Navigation buttons
+            HStack(spacing: 12) {
+                Button(action: {
+                    showDataAnalysisHub = true
+                    loadSavedSpreadsheets()
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "chart.bar.doc.horizontal")
+                            .font(.system(size: 13))
+                        Text("Analysis Hub")
+                            .font(.system(size: 13, weight: .medium))
+                    }
+                    .foregroundColor(showDataAnalysisHub ? .white : .primary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(showDataAnalysisHub ? Color.blue : Color.clear)
+                    )
+                }
+                .buttonStyle(.plain)
+                
+                Toggle("", isOn: $isCanvasMode)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+                    .help("Canvas Mode")
+                
+                Text("Canvas")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
+            
+            // Profile Menu (smaller, on the right)
+            ProfileMenuView(showSettings: $showSettings)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .background(
+            Color(NSColor.controlBackgroundColor)
+                .shadow(color: .black.opacity(0.05), radius: 1, y: 1)
+        )
+    }
+    
     // MARK: - Sidebar View
     
     private var sidebarView: some View {
         ScrollView {
-            VStack(spacing: 20) {
-                // Header
-                VStack(spacing: 8) {
-                    Image(systemName: "chart.line.uptrend.xyaxis")
-                        .imageScale(.large)
-                        .foregroundStyle(.tint)
-                    Text("Stock Data Viewer")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                    
-                    // Canvas Mode Toggle
-                    Toggle("Canvas Mode", isOn: $isCanvasMode)
-                        .padding(.horizontal)
-                        .padding(.top, 8)
-                    
-                    // Data Analysis Hub Button
-                    Button(action: {
-                        showDataAnalysisHub = true
-                        loadSavedSpreadsheets()
-                    }) {
-                        HStack {
-                            Image(systemName: "chart.bar.doc.horizontal")
-                            Text("Data Analysis Hub (\(savedSpreadsheets.count))")
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
-                    }
-                    .buttonStyle(.bordered)
-                    .padding(.horizontal)
-                    .padding(.top, 4)
-                    
-                    // Gemini API Key Input (only show in Data Analysis Hub)
-                    if showDataAnalysisHub {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Gemini API Key")
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                            
-                            SecureField("Enter Gemini API key", text: $geminiCredentialManager.apiKey)
-                                .textFieldStyle(.roundedBorder)
-                                .onChange(of: geminiCredentialManager.apiKey) { _, _ in
-                                    if geminiCredentialManager.saveCredentials {
-                                        try? geminiCredentialManager.saveCredentialsIfNeeded()
-                                    }
-                                }
-                            
-                            Toggle("Save Gemini API key securely", isOn: $geminiCredentialManager.saveCredentials)
-                                .onChange(of: geminiCredentialManager.saveCredentials) { _, newValue in
-                                    if newValue {
-                                        try? geminiCredentialManager.saveCredentialsIfNeeded()
-                                    } else {
-                                        geminiCredentialManager.deleteSavedCredentials()
-                                    }
-                                }
-                            
-                            Text("Get your free API key at https://aistudio.google.com/apikey")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                        }
-                        .padding(.horizontal)
-                        .padding(.top, 8)
-                    }
-                }
-                .padding(.top)
-                
-                // Credentials Section
+            VStack(alignment: .leading, spacing: 20) {
+                // Modern Input Section
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("API Credentials")
-                        .font(.headline)
+                    Text("Stock Query")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.secondary)
+                        .textCase(.uppercase)
+                        .tracking(0.5)
                     
-                    // API Key Input
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Massive API Key")
-                            .font(.subheadline)
-                        SecureField("Enter your API key", text: $credentialManager.apiKey)
-                            .textFieldStyle(.roundedBorder)
-                            .onChange(of: credentialManager.apiKey) { _, _ in
-                                updateRepository()
-                                // Auto-save if checkbox is checked
-                                if credentialManager.saveCredentials {
-                                    saveCredentials()
-                                }
-                            }
-                    }
-                    
-                    // Save Credentials Checkbox
-                    Toggle("Save credentials securely", isOn: $credentialManager.saveCredentials)
-                        .onChange(of: credentialManager.saveCredentials) { _, newValue in
-                            if newValue {
-                                saveCredentials()
-                            } else {
-                                credentialManager.deleteSavedCredentials()
-                            }
-                        }
-                    
-                    // Use Mock Data Toggle
-                    Toggle("Use mock data (for testing)", isOn: $useMockData)
-                        .onChange(of: useMockData) { _, _ in
-                            updateRepository()
-                        }
-                }
-                .padding()
-                .background(Color(NSColor.controlBackgroundColor))
-                .cornerRadius(12)
-                
-                // Input Section
-                VStack(alignment: .leading, spacing: 16) {
                     // Stock Ticker Input
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Stock Ticker")
-                            .font(.headline)
-                        TextField("e.g., AAPL", text: $viewModel.ticker)
-                            .textFieldStyle(.roundedBorder)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Ticker")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.secondary)
+                        TextField("AAPL", text: $viewModel.ticker)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 14))
+                            .padding(10)
+                            .background(Color(NSColor.controlBackgroundColor))
+                            .cornerRadius(6)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .stroke(Color(NSColor.separatorColor), lineWidth: 1)
+                            )
                             .disableAutocorrection(true)
                     }
                     
-                    // Start Date Picker
-                    VStack(alignment: .leading, spacing: 8) {
+                    // Date Range
+                    VStack(alignment: .leading, spacing: 6) {
                         Text("Start Date")
-                            .font(.headline)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.secondary)
                         DatePicker(
-                            "Start Date",
+                            "",
                             selection: $viewModel.startDate,
                             displayedComponents: [.date, .hourAndMinute]
                         )
                         .datePickerStyle(.compact)
+                        .labelsHidden()
                     }
                     
-                    // End Date Picker
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 6) {
                         Text("End Date")
-                            .font(.headline)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.secondary)
                         DatePicker(
-                            "End Date",
+                            "",
                             selection: $viewModel.endDate,
                             displayedComponents: [.date, .hourAndMinute]
                         )
                         .datePickerStyle(.compact)
+                        .labelsHidden()
                     }
                     
-                    // Granularity Picker
-                    VStack(alignment: .leading, spacing: 8) {
+                    // Granularity
+                    VStack(alignment: .leading, spacing: 6) {
                         Text("Granularity")
-                            .font(.headline)
-                        Picker("Granularity", selection: $viewModel.granularity) {
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.secondary)
+                        Picker("", selection: $viewModel.granularity) {
                             ForEach(AggregateGranularity.allCases) { granularity in
                                 Text(granularity.displayName).tag(granularity)
                             }
                         }
                         .pickerStyle(.menu)
+                        .labelsHidden()
                     }
                     
-                    // Fetch Button
+                    // Fetch Stock Data Button
                     Button(action: {
-                        Task { @MainActor in
+                        Task {
                             await viewModel.fetchStockData()
-                            // Handle data based on mode
                             if !viewModel.aggregates.isEmpty {
                                 // Always save to XLSX
                                 saveToSpreadsheet()
@@ -236,48 +240,72 @@ struct ContentView: View {
                             }
                         }
                     }) {
-                        HStack {
+                        HStack(spacing: 8) {
                             if viewModel.isLoading {
                                 ProgressView()
+                                    .scaleEffect(0.8)
                             } else {
                                 Image(systemName: "arrow.down.circle.fill")
+                                    .font(.system(size: 14, weight: .medium))
                             }
-                            Text(viewModel.isLoading ? "Loading..." : "Fetch Stock Data")
+                            Text(viewModel.isLoading ? "Loading..." : "Fetch Data")
+                                .font(.system(size: 14, weight: .semibold))
                         }
                         .frame(maxWidth: .infinity)
-                        .padding()
+                        .padding(.vertical, 10)
+                        .background(
+                            Group {
+                                if viewModel.ticker.isEmpty || viewModel.isLoading {
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(Color.gray.opacity(0.3))
+                                } else {
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [Color.blue, Color.blue.opacity(0.8)],
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
+                                        )
+                                }
+                            }
+                        )
+                        .foregroundColor(viewModel.ticker.isEmpty || viewModel.isLoading ? .secondary : .white)
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(.plain)
                     .disabled(viewModel.ticker.isEmpty || viewModel.isLoading)
                     
                     // Error Message
                     if let errorMessage = viewModel.errorMessage {
-                        Text(errorMessage)
-                            .foregroundColor(.red)
-                            .font(.caption)
-                            .padding(.top, 4)
+                        HStack(spacing: 6) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.system(size: 12))
+                            Text(errorMessage)
+                                .font(.system(size: 12))
+                        }
+                        .foregroundColor(.red)
+                        .padding(8)
+                        .background(Color.red.opacity(0.1))
+                        .cornerRadius(6)
                     }
                 }
-                .padding()
-                .background(Color(NSColor.controlBackgroundColor))
-                .cornerRadius(12)
-                
-                Spacer()
+                .padding(16)
+                .background(Color(NSColor.windowBackgroundColor))
+                .cornerRadius(8)
             }
-            .padding()
         }
+        .padding(16)
+        .background(Color(NSColor.controlBackgroundColor))
     }
     
     private func updateRepository() {
-        let repository: any MassiveRepository
-        
-        if useMockData {
-            repository = MockMassiveRepository()
-        } else if let realRepository = credentialManager.createRepository() {
-            repository = realRepository
-        } else {
-            // Fallback to mock if no valid credentials
-            repository = MockMassiveRepository()
+        // Always use real repository - require valid credentials
+        guard let repository = credentialManager.createRepository() else {
+            // If no valid credentials, create repository with empty key (will fail API calls)
+            // User must provide credentials in Settings
+            let emptyRepository = MassiveRepositoryImpl(apiKey: "")
+            viewModel.updateRepository(emptyRepository)
+            return
         }
         
         // Update the existing ViewModel's repository
@@ -416,11 +444,11 @@ struct ContentView: View {
     
     private var searchQueriesListView: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Header
+            // Modern Header
             HStack {
                 Text("Search History")
-                    .font(.title2)
-                    .fontWeight(.bold)
+                    .font(.system(size: 18, weight: .semibold, design: .rounded))
+                    .foregroundColor(.primary)
                 Spacer()
                 if !searchQueries.isEmpty {
                     Button(action: {
@@ -429,12 +457,14 @@ struct ContentView: View {
                         }
                     }) {
                         Text("Clear All")
-                            .font(.caption)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.red)
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.plain)
                 }
             }
-            .padding()
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
             .background(Color(NSColor.controlBackgroundColor))
             
             Divider()
@@ -443,17 +473,17 @@ struct ContentView: View {
             if searchQueries.isEmpty {
                 VStack(spacing: 20) {
                     Spacer()
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 60))
-                        .foregroundColor(.secondary)
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                        .font(.system(size: 48))
+                        .foregroundColor(.secondary.opacity(0.6))
                     Text("No Searches Yet")
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                    Text("Enter a stock ticker and click 'Fetch Stock Data' to begin")
-                        .font(.subheadline)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.primary)
+                    Text("Enter a ticker and fetch data to get started")
+                        .font(.system(size: 13))
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
-                        .padding(.horizontal)
+                        .padding(.horizontal, 40)
                     Spacer()
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -464,20 +494,48 @@ struct ContentView: View {
                             selectedQuery = query
                         }
                     }) {
-                        HStack {
+                        HStack(spacing: 12) {
+                            // Ticker badge
+                            Text(query.ticker.uppercased())
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [Color.blue, Color.blue.opacity(0.8)],
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
+                                        )
+                                )
+                            
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(query.displayName)
-                                    .font(.headline)
+                                    .font(.system(size: 14, weight: .semibold))
                                     .foregroundColor(.primary)
-                                Text("\(query.aggregates.count) data points")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+                                HStack(spacing: 8) {
+                                    Text("\(query.aggregates.count) points")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.secondary)
+                                    Text("•")
+                                        .foregroundColor(.secondary)
+                                    Text(formatDate(query.date))
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.secondary)
+                                }
                             }
+                            
                             Spacer()
+                            
                             Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .medium))
                                 .foregroundColor(.secondary)
                         }
-                        .padding(.vertical, 4)
+                        .padding(.vertical, 8)
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                 }
@@ -491,25 +549,28 @@ struct ContentView: View {
         Group {
             if let query = selectedQuery {
                 VStack(spacing: 0) {
-                    // Header with back button
-                    HStack {
+                    // Modern Header with back button
+                    HStack(spacing: 16) {
                         Button(action: {
                             withAnimation {
                                 selectedQuery = nil
                             }
                         }) {
-                            HStack {
+                            HStack(spacing: 6) {
                                 Image(systemName: "chevron.left")
+                                    .font(.system(size: 13))
                                 Text("Back")
+                                    .font(.system(size: 13, weight: .medium))
                             }
+                            .foregroundColor(.primary)
                         }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(.plain)
                         
                         Spacer()
                         
                         Text(query.displayName)
-                            .font(.title2)
-                            .fontWeight(.bold)
+                            .font(.system(size: 18, weight: .semibold, design: .rounded))
+                            .foregroundColor(.primary)
                         
                         Spacer()
                         
@@ -517,7 +578,8 @@ struct ContentView: View {
                         Color.clear
                             .frame(width: 80)
                     }
-                    .padding()
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
                     .background(Color(NSColor.controlBackgroundColor))
                     
                     Divider()
@@ -541,35 +603,41 @@ struct ContentView: View {
     private var dataAnalysisHubView: some View {
         GeometryReader { geometry in
             VStack(alignment: .leading, spacing: 0) {
-                // Header
-                HStack {
-                    Button(action: {
-                        showDataAnalysisHub = false
-                    }) {
-                        HStack {
-                            Image(systemName: "chevron.left")
-                            Text("Back")
-                        }
+            // Modern Header
+            HStack(spacing: 16) {
+                Button(action: {
+                    showDataAnalysisHub = false
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 13))
+                        Text("Back")
+                            .font(.system(size: 13, weight: .medium))
                     }
-                    .buttonStyle(.bordered)
-                    
-                    Spacer()
-                    
-                    Text("Data Analysis Hub")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                    
-                    Spacer()
-                    
-                    Button(action: {
-                        loadSavedSpreadsheets()
-                    }) {
-                        Image(systemName: "arrow.clockwise")
-                    }
-                    .buttonStyle(.bordered)
+                    .foregroundColor(.primary)
                 }
-                .padding()
-                .background(Color(NSColor.controlBackgroundColor))
+                .buttonStyle(.plain)
+                
+                Spacer()
+                
+                Text("Data Analysis Hub")
+                    .font(.system(size: 18, weight: .semibold, design: .rounded))
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                Button(action: {
+                    loadSavedSpreadsheets()
+                }) {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+            .background(Color(NSColor.controlBackgroundColor))
                 
                 Divider()
                 

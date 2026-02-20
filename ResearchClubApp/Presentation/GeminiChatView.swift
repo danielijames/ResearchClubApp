@@ -8,7 +8,7 @@
 import SwiftUI
 import AppKit
 
-struct ChatMessage: Identifiable {
+struct ChatMessage: Identifiable, Codable {
     let id: UUID
     let role: ChatRole
     let content: String
@@ -22,7 +22,7 @@ struct ChatMessage: Identifiable {
     }
 }
 
-enum ChatRole {
+enum ChatRole: String, Codable {
     case user
     case assistant
     
@@ -43,9 +43,31 @@ struct GeminiChatView: View {
     @State private var isSending: Bool = false
     @State private var errorMessage: String?
     
+    private let conversationStorageKey = "gemini_conversation"
+    
     private var geminiService: GeminiService? {
         guard !geminiAPIKey.isEmpty else { return nil }
         return GeminiService(apiKey: geminiAPIKey.trimmingCharacters(in: .whitespaces))
+    }
+    
+    // MARK: - Persistence
+    
+    private func loadConversation() {
+        if let data = UserDefaults.standard.data(forKey: conversationStorageKey),
+           let decoded = try? JSONDecoder().decode([ChatMessage].self, from: data) {
+            messages = decoded
+        }
+    }
+    
+    private func saveConversation() {
+        if let encoded = try? JSONEncoder().encode(messages) {
+            UserDefaults.standard.set(encoded, forKey: conversationStorageKey)
+        }
+    }
+    
+    private func clearConversation() {
+        messages = []
+        UserDefaults.standard.removeObject(forKey: conversationStorageKey)
     }
     
     var body: some View {
@@ -65,6 +87,22 @@ struct GeminiChatView: View {
                     Text("\(selectedSpreadsheets.count) spreadsheet\(selectedSpreadsheets.count == 1 ? "" : "s") selected")
                         .font(.caption)
                         .foregroundColor(.secondary)
+                }
+                
+                // Erase conversation button
+                if !messages.isEmpty {
+                    Button(action: {
+                        clearConversation()
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "trash")
+                            Text("Erase")
+                        }
+                        .font(.caption)
+                    }
+                    .buttonStyle(.bordered)
+                    .foregroundColor(.red)
+                    .help("Clear conversation history")
                 }
             }
             .padding()
@@ -112,7 +150,7 @@ struct GeminiChatView: View {
                     }
                     .padding()
                 }
-                .onChange(of: messages.count) { _, _ in
+                .onChange(of: messages.count) { oldValue, newValue in
                     if let lastMessage = messages.last {
                         withAnimation {
                             proxy.scrollTo(lastMessage.id, anchor: .bottom)
@@ -196,14 +234,22 @@ struct GeminiChatView: View {
         .frame(maxWidth: .infinity)
         .background(Color(NSColor.windowBackgroundColor))
         .onAppear {
+            // Load persisted conversation first
+            loadConversation()
+            
+            // Only add welcome message if conversation is empty and spreadsheets are selected
             if messages.isEmpty && !selectedSpreadsheets.isEmpty {
                 addWelcomeMessage()
+                saveConversation() // Save welcome message
             }
         }
-        .onChange(of: selectedSpreadsheets.count) { _, _ in
-            if messages.isEmpty && !selectedSpreadsheets.isEmpty {
-                addWelcomeMessage()
-            }
+        .onChange(of: messages.count) { oldValue, newValue in
+            // Save conversation whenever messages change
+            saveConversation()
+        }
+        .onChange(of: selectedSpreadsheets.count) { oldValue, newValue in
+            // Don't reset conversation when spreadsheets change
+            // Conversation persists regardless of selected spreadsheets
         }
     }
     
@@ -233,6 +279,7 @@ struct GeminiChatView: View {
         // Add user message
         let userChatMessage = ChatMessage(role: .user, content: userMessage)
         messages.append(userChatMessage)
+        saveConversation() // Save immediately after adding user message
         inputText = ""
         errorMessage = nil
         isSending = true
@@ -256,6 +303,7 @@ struct GeminiChatView: View {
                 // Add assistant response
                 await MainActor.run {
                     messages.append(ChatMessage(role: .assistant, content: response))
+                    saveConversation() // Save after receiving response
                     isSending = false
                 }
             } catch {

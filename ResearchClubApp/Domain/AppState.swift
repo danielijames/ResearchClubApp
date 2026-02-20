@@ -13,6 +13,7 @@ struct AppState: Codable {
     var tabs: [ResearchTab]
     var inputState: InputState
     var geminiChatWidth: CGFloat
+    var isSidebarCollapsed: Bool
     var lastSavedAt: Date
     
     init(
@@ -23,12 +24,14 @@ struct AppState: Codable {
         ],
         inputState: InputState = InputState(),
         geminiChatWidth: CGFloat = 0,
+        isSidebarCollapsed: Bool = false,
         lastSavedAt: Date = Date()
     ) {
         self.selectedTabId = selectedTabId
         self.tabs = tabs
         self.inputState = inputState
         self.geminiChatWidth = geminiChatWidth
+        self.isSidebarCollapsed = isSidebarCollapsed
         self.lastSavedAt = lastSavedAt
     }
 }

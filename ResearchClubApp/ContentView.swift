@@ -31,6 +31,7 @@ struct ContentView: View {
     @State private var isDraggingGeminiPanel: Bool = false
     @State private var dragStartWidth: CGFloat = 0
     @State private var cachedGeometryWidth: CGFloat = 0
+    @State private var isSidebarCollapsed: Bool = false
     
     private let spreadsheetExporter = SpreadsheetExporter()
     private let minChatWidth: CGFloat = 500
@@ -68,6 +69,7 @@ struct ContentView: View {
                 UnifiedNavBarView(
                     showDataAnalysisHub: currentTab?.showGeminiChat ?? false,
                     showBackButton: shouldShowBackButton,
+                    isSidebarCollapsed: isSidebarCollapsed,
                     onBack: navBarBackAction,
                     onToggleDataAnalysisHub: {
                         guard let index = currentTabIndex else { return }
@@ -79,27 +81,36 @@ struct ContentView: View {
                             loadSavedSpreadsheets()
                         }
                     },
+                    onToggleSidebar: {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isSidebarCollapsed.toggle()
+                        }
+                        saveApplicationState()
+                    },
                     onRefresh: navBarRefreshAction
                 )
                 
                 // Two-column layout: Input Sidebar | Main Content (or Search History)
                 HStack(spacing: 0) {
                     // Left: Input Controls Sidebar
-                    StockQuerySidebarView(
-                        viewModel: viewModel,
-                        onFetchData: {
-                            Task {
-                                await viewModel.fetchStockData()
-                                if !viewModel.aggregates.isEmpty {
-                                    saveToSpreadsheet()
-                                    createSearchQuery()
+                    if !isSidebarCollapsed {
+                        StockQuerySidebarView(
+                            viewModel: viewModel,
+                            onFetchData: {
+                                Task {
+                                    await viewModel.fetchStockData()
+                                    if !viewModel.aggregates.isEmpty {
+                                        saveToSpreadsheet()
+                                        createSearchQuery()
+                                    }
                                 }
                             }
-                        }
-                    )
-                    .frame(width: 350)
-                    
-                    Divider()
+                        )
+                        .frame(width: 350)
+                        .transition(.move(edge: .leading).combined(with: .opacity))
+                        
+                        Divider()
+                    }
                     
                     // Right: Main Content Area or Search History
                     if currentTab?.isSearchHistoryTab == true {
@@ -171,6 +182,9 @@ struct ContentView: View {
             saveApplicationState()
         }
         .onChange(of: viewModel.granularity) { oldValue, newValue in
+            saveApplicationState()
+        }
+        .onChange(of: isSidebarCollapsed) { oldValue, newValue in
             saveApplicationState()
         }
     }
@@ -343,6 +357,7 @@ struct ContentView: View {
             tabs: tabs,
             inputState: inputState,
             geminiChatWidth: geminiChatWidth,
+            isSidebarCollapsed: isSidebarCollapsed,
             lastSavedAt: Date()
         )
         
@@ -376,6 +391,9 @@ struct ContentView: View {
         if savedState.geminiChatWidth > 0 {
             geminiChatWidth = savedState.geminiChatWidth
         }
+        
+        // Restore sidebar collapsed state
+        isSidebarCollapsed = savedState.isSidebarCollapsed
         
         print("✅ Restored application state from \(savedState.lastSavedAt)")
     }

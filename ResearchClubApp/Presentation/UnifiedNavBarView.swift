@@ -10,12 +10,28 @@ import SwiftUI
 struct UnifiedNavBarView: View {
     let showDataAnalysisHub: Bool
     let showBackButton: Bool
+    let isSidebarCollapsed: Bool
     let onBack: (() -> Void)?
     let onToggleDataAnalysisHub: () -> Void
+    let onToggleSidebar: () -> Void
     let onRefresh: (() -> Void)?
     
     var body: some View {
         HStack(spacing: 16) {
+            // Sidebar toggle button
+            Button(action: onToggleSidebar) {
+                Image(systemName: isSidebarCollapsed ? "sidebar.right" : "sidebar.left")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.primary)
+                    .frame(width: 32, height: 32)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(isSidebarCollapsed ? Color.purple.opacity(0.1) : Color.clear)
+                    )
+            }
+            .buttonStyle(.plain)
+            .help(isSidebarCollapsed ? "Show sidebar" : "Hide sidebar")
+            
             // Back button (if needed)
             if showBackButton, let onBack = onBack {
                 Button(action: onBack) {

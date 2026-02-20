@@ -22,9 +22,9 @@ class CredentialManager: ObservableObject {
         loadSavedCredentials()
     }
     
-    /// Loads saved credentials from secure storage if they exist
+    /// Loads saved credentials from storage if they exist
     func loadSavedCredentials() {
-        if let savedAPIKey = try? manageCredentialsUseCase.loadSavedCredentials() {
+        if let savedAPIKey = manageCredentialsUseCase.loadSavedCredentials() {
             apiKey = savedAPIKey
             saveCredentials = true
         }

@@ -16,16 +16,15 @@ struct ManageCredentialsUseCase {
         self.credentialStorage = credentialStorage
     }
     
-    /// Loads saved credentials from secure storage
+    /// Loads saved credentials from storage
     /// - Returns: The saved API key if it exists, nil otherwise
-    /// - Throws: CredentialStorageError if retrieval fails
-    func loadSavedCredentials() throws -> String? {
-        return try credentialStorage.getAPIKey()
+    func loadSavedCredentials() -> String? {
+        return credentialStorage.getAPIKey()
     }
     
-    /// Saves credentials to secure storage
+    /// Saves credentials to storage
     /// - Parameter apiKey: The API key to save
-    /// - Throws: CredentialStorageError if save fails or API key is invalid
+    /// - Throws: CredentialManagementError if API key is invalid
     func saveCredentials(_ apiKey: String) throws {
         // Business logic: Validate API key before saving
         let trimmedKey = apiKey.trimmingCharacters(in: .whitespaces)
@@ -38,7 +37,7 @@ struct ManageCredentialsUseCase {
             throw CredentialManagementError.invalidAPIKey("API key appears to be too short")
         }
         
-        try credentialStorage.saveAPIKey(trimmedKey)
+        credentialStorage.saveAPIKey(trimmedKey)
     }
     
     /// Deletes saved credentials from secure storage
@@ -56,6 +55,51 @@ struct ManageCredentialsUseCase {
     /// - Parameter apiKey: The API key to validate
     /// - Returns: True if the API key appears valid
     func validateAPIKey(_ apiKey: String) -> Bool {
+        let trimmed = apiKey.trimmingCharacters(in: .whitespaces)
+        return !trimmed.isEmpty && trimmed.count >= 10
+    }
+    
+    // MARK: - Gemini API Key Management
+    
+    /// Loads saved Gemini API key from storage
+    /// - Returns: The saved Gemini API key if it exists, nil otherwise
+    func loadGeminiCredentials() -> String? {
+        return credentialStorage.getGeminiAPIKey()
+    }
+    
+    /// Saves Gemini API key to storage
+    /// - Parameter apiKey: The Gemini API key to save
+    /// - Throws: CredentialManagementError if API key is invalid
+    func saveGeminiCredentials(_ apiKey: String) throws {
+        // Business logic: Validate API key before saving
+        let trimmedKey = apiKey.trimmingCharacters(in: .whitespaces)
+        guard !trimmedKey.isEmpty else {
+            throw CredentialManagementError.emptyAPIKey
+        }
+        
+        // Business logic: Basic validation (could add more checks)
+        guard trimmedKey.count >= 10 else {
+            throw CredentialManagementError.invalidAPIKey("API key appears to be too short")
+        }
+        
+        credentialStorage.saveGeminiAPIKey(trimmedKey)
+    }
+    
+    /// Deletes saved Gemini API key from storage
+    func deleteGeminiCredentials() {
+        credentialStorage.deleteGeminiAPIKey()
+    }
+    
+    /// Checks if Gemini credentials are currently saved
+    /// - Returns: True if Gemini credentials exist in storage
+    func hasSavedGeminiCredentials() -> Bool {
+        return credentialStorage.hasSavedGeminiCredentials()
+    }
+    
+    /// Validates a Gemini API key format (business rule)
+    /// - Parameter apiKey: The Gemini API key to validate
+    /// - Returns: True if the API key appears valid
+    func validateGeminiAPIKey(_ apiKey: String) -> Bool {
         let trimmed = apiKey.trimmingCharacters(in: .whitespaces)
         return !trimmed.isEmpty && trimmed.count >= 10
     }

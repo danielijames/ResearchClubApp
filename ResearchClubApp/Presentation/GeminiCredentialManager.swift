@@ -9,48 +9,56 @@ import Foundation
 import SwiftUI
 
 /// Manages Gemini API key input, storage, and retrieval for the presentation layer.
+/// Uses UseCase to interact with credential storage following Clean Architecture.
 @MainActor
 class GeminiCredentialManager: ObservableObject {
     @Published var apiKey: String = ""
     @Published var saveCredentials: Bool = false
     
-    private let credentialStorage = CredentialStorage()
+    private let manageCredentialsUseCase: ManageCredentialsUseCase
     
-    init() {
+    init(manageCredentialsUseCase: ManageCredentialsUseCase = ManageCredentialsUseCase()) {
+        self.manageCredentialsUseCase = manageCredentialsUseCase
         loadSavedCredentials()
     }
     
-    /// Loads saved Gemini API key from secure storage if it exists
+    /// Loads saved Gemini API key from storage if it exists
     func loadSavedCredentials() {
-        if let savedAPIKey = try? credentialStorage.getGeminiAPIKey() {
+        if let savedAPIKey = manageCredentialsUseCase.loadGeminiCredentials() {
             apiKey = savedAPIKey
             saveCredentials = true
         }
     }
     
-    /// Saves Gemini API key to secure storage if saveCredentials is true
+    /// Saves Gemini API key to storage if saveCredentials is true
+    /// - Throws: CredentialManagementError if save fails or API key is invalid
     func saveCredentialsIfNeeded() throws {
         if saveCredentials {
             if apiKey.isEmpty {
                 // If checkbox is checked but field is empty, delete saved credentials
-                credentialStorage.deleteGeminiAPIKey()
+                manageCredentialsUseCase.deleteGeminiCredentials()
             } else {
-                // Save the API key
-                try credentialStorage.saveGeminiAPIKey(apiKey.trimmingCharacters(in: .whitespaces))
+                // Use case handles validation and saving
+                try manageCredentialsUseCase.saveGeminiCredentials(apiKey)
             }
         } else {
             // If checkbox is unchecked, delete any saved credentials
-            credentialStorage.deleteGeminiAPIKey()
+            manageCredentialsUseCase.deleteGeminiCredentials()
         }
     }
     
-    /// Deletes saved Gemini API key from secure storage
+    /// Deletes saved Gemini API key from storage
     func deleteSavedCredentials() {
-        credentialStorage.deleteGeminiAPIKey()
+        manageCredentialsUseCase.deleteGeminiCredentials()
+    }
+    
+    /// Checks if Gemini API key is valid using business rules
+    var hasValidCredentials: Bool {
+        manageCredentialsUseCase.validateGeminiAPIKey(apiKey)
     }
     
     /// Checks if Gemini API key is currently saved
     var hasSavedCredentials: Bool {
-        credentialStorage.hasSavedGeminiCredentials()
+        manageCredentialsUseCase.hasSavedGeminiCredentials()
     }
 }

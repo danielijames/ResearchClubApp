@@ -408,11 +408,37 @@ struct ChatBubbleView: View {
         let markdownContent = convertHTMLToMarkdown(content)
         
         // SwiftUI Text supports markdown in macOS 12+
-        if let attributedString = try? AttributedString(markdown: markdownContent) {
+        // Preserve newlines by using MarkdownParsingOptions
+        if let attributedString = try? createAttributedString(from: markdownContent) {
             Text(attributedString)
+                .lineSpacing(4)
         } else {
-            // Fallback to plain text if markdown parsing fails
-            Text(content)
+            // Fallback: preserve newlines by splitting into lines
+            fallbackTextWithNewlines(markdownContent)
+        }
+    }
+    
+    private func createAttributedString(from markdown: String) throws -> AttributedString {
+        var options = AttributedString.MarkdownParsingOptions()
+        options.interpretedSyntax = .inlineOnlyPreservingWhitespace
+        return try AttributedString(markdown: markdown, options: options)
+    }
+    
+    @ViewBuilder
+    private func fallbackTextWithNewlines(_ content: String) -> some View {
+        let lines = content.components(separatedBy: .newlines)
+        VStack(alignment: .leading, spacing: 2) {
+            ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
+                if !line.isEmpty || (index < lines.count - 1 && lines[index + 1].isEmpty) {
+                    Text(line.isEmpty ? " " : line)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } else if line.isEmpty && index < lines.count - 1 {
+                    // Preserve empty lines
+                    Text(" ")
+                        .frame(height: 8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
         }
     }
     

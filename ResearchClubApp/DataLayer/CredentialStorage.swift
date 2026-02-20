@@ -6,212 +6,52 @@
 //
 
 import Foundation
-import Security
 
-/// Secure storage for API credentials using Keychain Services
+/// Storage for API credentials using UserDefaults
 class CredentialStorage {
-    private let serviceName = "com.researchclubapp.massiveapi"
+    private let userDefaults = UserDefaults.standard
     private let apiKeyKey = "massive_api_key"
     private let geminiApiKeyKey = "gemini_api_key"
     
-    /// Saves the API key securely to Keychain
+    /// Saves the API key to UserDefaults
     /// - Parameter apiKey: The API key to save
-    /// - Throws: Keychain error if save fails
-    func saveAPIKey(_ apiKey: String) throws {
-        guard let data = apiKey.data(using: .utf8) else {
-            throw CredentialStorageError.invalidData
-        }
-        
-        // Check if item already exists
-        let searchQuery: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: serviceName,
-            kSecAttrAccount as String: apiKeyKey
-        ]
-        
-        var result: AnyObject?
-        let searchStatus = SecItemCopyMatching(searchQuery as CFDictionary, &result)
-        
-        if searchStatus == errSecSuccess {
-            // Item exists - update it instead of deleting and recreating
-            let updateQuery: [String: Any] = [
-                kSecClass as String: kSecClassGenericPassword,
-                kSecAttrService as String: serviceName,
-                kSecAttrAccount as String: apiKeyKey
-            ]
-            
-            let updateAttributes: [String: Any] = [
-                kSecValueData as String: data
-            ]
-            
-            let updateStatus = SecItemUpdate(updateQuery as CFDictionary, updateAttributes as CFDictionary)
-            guard updateStatus == errSecSuccess else {
-                throw CredentialStorageError.saveFailed(updateStatus)
-            }
-        } else {
-            // Item doesn't exist - create it
-            let addQuery: [String: Any] = [
-                kSecClass as String: kSecClassGenericPassword,
-                kSecAttrService as String: serviceName,
-                kSecAttrAccount as String: apiKeyKey,
-                kSecValueData as String: data,
-                kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlocked
-            ]
-            
-            let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
-            guard addStatus == errSecSuccess else {
-                throw CredentialStorageError.saveFailed(addStatus)
-            }
-        }
+    func saveAPIKey(_ apiKey: String) {
+        userDefaults.set(apiKey, forKey: apiKeyKey)
     }
     
-    /// Retrieves the saved API key from Keychain
+    /// Retrieves the saved API key from UserDefaults
     /// - Returns: The saved API key, or nil if not found
-    /// - Throws: Keychain error if retrieval fails
-    func getAPIKey() throws -> String? {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: serviceName,
-            kSecAttrAccount as String: apiKeyKey,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne
-        ]
-        
-        var result: AnyObject?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
-        
-        guard status != errSecItemNotFound else {
-            return nil
-        }
-        
-        guard status == errSecSuccess else {
-            // If authentication failed, return nil instead of throwing
-            // This prevents repeated prompts - user needs to re-enter key
-            if status == errSecAuthFailed {
-                return nil
-            }
-            throw CredentialStorageError.retrievalFailed(status)
-        }
-        
-        guard let data = result as? Data,
-              let apiKey = String(data: data, encoding: .utf8) else {
-            throw CredentialStorageError.invalidData
-        }
-        
-        return apiKey
+    func getAPIKey() -> String? {
+        return userDefaults.string(forKey: apiKeyKey)
     }
     
-    /// Deletes the saved API key from Keychain
+    /// Deletes the saved API key from UserDefaults
     func deleteAPIKey() {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: serviceName,
-            kSecAttrAccount as String: apiKeyKey
-        ]
-        
-        SecItemDelete(query as CFDictionary)
+        userDefaults.removeObject(forKey: apiKeyKey)
     }
     
     /// Checks if credentials are saved
-    /// - Returns: True if credentials exist in Keychain
+    /// - Returns: True if credentials exist
     func hasSavedCredentials() -> Bool {
-        return (try? getAPIKey()) != nil
+        return getAPIKey() != nil
     }
     
     // MARK: - Gemini API Key Storage
     
-    func saveGeminiAPIKey(_ apiKey: String) throws {
-        guard let data = apiKey.data(using: .utf8) else {
-            throw CredentialStorageError.invalidData
-        }
-        
-        let searchQuery: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: serviceName,
-            kSecAttrAccount as String: geminiApiKeyKey
-        ]
-        
-        var result: AnyObject?
-        let searchStatus = SecItemCopyMatching(searchQuery as CFDictionary, &result)
-        
-        if searchStatus == errSecSuccess {
-            // Update existing item
-            let updateQuery: [String: Any] = [
-                kSecClass as String: kSecClassGenericPassword,
-                kSecAttrService as String: serviceName,
-                kSecAttrAccount as String: geminiApiKeyKey
-            ]
-            
-            let updateAttributes: [String: Any] = [
-                kSecValueData as String: data
-            ]
-            
-            let updateStatus = SecItemUpdate(updateQuery as CFDictionary, updateAttributes as CFDictionary)
-            guard updateStatus == errSecSuccess else {
-                throw CredentialStorageError.saveFailed(updateStatus)
-            }
-        } else {
-            // Add new item
-            let addQuery: [String: Any] = [
-                kSecClass as String: kSecClassGenericPassword,
-                kSecAttrService as String: serviceName,
-                kSecAttrAccount as String: geminiApiKeyKey,
-                kSecValueData as String: data,
-                kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlocked
-            ]
-            
-            let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
-            guard addStatus == errSecSuccess else {
-                throw CredentialStorageError.saveFailed(addStatus)
-            }
-        }
+    func saveGeminiAPIKey(_ apiKey: String) {
+        userDefaults.set(apiKey, forKey: geminiApiKeyKey)
     }
     
-    func getGeminiAPIKey() throws -> String? {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: serviceName,
-            kSecAttrAccount as String: geminiApiKeyKey,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne
-        ]
-        
-        var result: AnyObject?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
-        
-        guard status != errSecItemNotFound else {
-            return nil
-        }
-        
-        guard status == errSecSuccess else {
-            // If authentication failed, return nil instead of throwing
-            // This prevents repeated prompts - user needs to re-enter key
-            if status == errSecAuthFailed {
-                return nil
-            }
-            throw CredentialStorageError.retrievalFailed(status)
-        }
-        
-        guard let data = result as? Data,
-              let apiKey = String(data: data, encoding: .utf8) else {
-            throw CredentialStorageError.invalidData
-        }
-        
-        return apiKey
+    func getGeminiAPIKey() -> String? {
+        return userDefaults.string(forKey: geminiApiKeyKey)
     }
     
     func deleteGeminiAPIKey() {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: serviceName,
-            kSecAttrAccount as String: geminiApiKeyKey
-        ]
-        
-        SecItemDelete(query as CFDictionary)
+        userDefaults.removeObject(forKey: geminiApiKeyKey)
     }
     
     func hasSavedGeminiCredentials() -> Bool {
-        return (try? getGeminiAPIKey()) != nil
+        return getGeminiAPIKey() != nil
     }
 }
 
@@ -219,17 +59,11 @@ class CredentialStorage {
 
 enum CredentialStorageError: LocalizedError {
     case invalidData
-    case saveFailed(OSStatus)
-    case retrievalFailed(OSStatus)
     
     var errorDescription: String? {
         switch self {
         case .invalidData:
             return "Invalid credential data"
-        case .saveFailed(let status):
-            return "Failed to save credentials: \(status)"
-        case .retrievalFailed(let status):
-            return "Failed to retrieve credentials: \(status)"
         }
     }
 }

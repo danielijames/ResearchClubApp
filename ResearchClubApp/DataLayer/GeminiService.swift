@@ -69,20 +69,48 @@ enum GeminiError: LocalizedError {
 
 class GeminiService {
     private let apiKey: String
-    // Using gemini-1.5-pro as it's more stable
-    // Alternative models: gemini-2.0-flash-exp, gemini-1.5-flash
-    private let modelName = "gemini-1.5-pro"
-    private let apiVersion = "v1beta" // Can also try "v1"
+    // Using Gemini 3 models (latest available):
+    // - gemini-3-flash-preview (fast, latest)
+    // - gemini-3-pro-preview (more capable, latest)
+    private let modelName = "gemini-3-flash-preview"
+    private let apiVersion = "v1beta"
     
     init(apiKey: String) {
         self.apiKey = apiKey
     }
     
     private func buildRequestURL() -> URL? {
+        // Format: https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={apiKey}
         let baseURLString = "https://generativelanguage.googleapis.com/\(apiVersion)/models/\(modelName):generateContent"
         var urlComponents = URLComponents(string: baseURLString)
         urlComponents?.queryItems = [URLQueryItem(name: "key", value: apiKey)]
         return urlComponents?.url
+    }
+    
+    // Helper to list available models (for debugging)
+    func listAvailableModels() async throws -> [String] {
+        let listURLString = "https://generativelanguage.googleapis.com/\(apiVersion)/models?key=\(apiKey)"
+        guard let url = URL(string: listURLString) else {
+            throw GeminiError.invalidResponse
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue(apiKey, forHTTPHeaderField: "x-goog-api-key")
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            throw GeminiError.networkError("Failed to list models")
+        }
+        
+        if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let models = json["models"] as? [[String: Any]] {
+            return models.compactMap { $0["name"] as? String }
+        }
+        
+        return []
     }
     
     func sendMessage(

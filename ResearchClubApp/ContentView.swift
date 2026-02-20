@@ -227,7 +227,6 @@ struct ContentView: View {
                         HStack {
                             if viewModel.isLoading {
                                 ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
                             } else {
                                 Image(systemName: "arrow.down.circle.fill")
                             }
@@ -235,10 +234,8 @@ struct ContentView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(viewModel.ticker.isEmpty ? Color.gray : Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
                     }
+                    .buttonStyle(.borderedProminent)
                     .disabled(viewModel.ticker.isEmpty || viewModel.isLoading)
                     
                     // Error Message

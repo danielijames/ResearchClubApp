@@ -17,10 +17,10 @@ struct ContentView: View {
     @State private var searchQueries: [SearchQuery] = []
     @State private var selectedQuery: SearchQuery?
     @State private var savedSpreadsheets: [SavedSpreadsheet] = []
-    @State private var showDataAnalysisHub: Bool = false
+    @State private var showDataAnalysisHub: Bool = true // Default to showing Analysis Hub
     @State private var selectedSpreadsheetForText: SavedSpreadsheet?
     @StateObject private var geminiCredentialManager = GeminiCredentialManager()
-    @State private var geminiChatWidth: CGFloat = 0 // Will be set to 50% of screen width
+    @State private var geminiChatWidth: CGFloat = 0 // Will be set to 40% of screen width (less prominent)
     @State private var showSettings = false
     
     private let spreadsheetExporter = SpreadsheetExporter()
@@ -109,14 +109,15 @@ struct ContentView: View {
             
             // Navigation buttons
             HStack(spacing: 12) {
+                // Data Insights button - clean and simple
                 Button(action: {
                     showDataAnalysisHub = true
                     loadSavedSpreadsheets()
                 }) {
                     HStack(spacing: 6) {
-                        Image(systemName: "chart.bar.doc.horizontal")
+                        Image(systemName: "sparkles")
                             .font(.system(size: 13))
-                        Text("Analysis Hub")
+                        Text("Data Insights")
                             .font(.system(size: 13, weight: .medium))
                     }
                     .foregroundColor(showDataAnalysisHub ? .white : .primary)
@@ -124,7 +125,7 @@ struct ContentView: View {
                     .padding(.vertical, 6)
                     .background(
                         RoundedRectangle(cornerRadius: 6)
-                            .fill(showDataAnalysisHub ? Color.blue : Color.clear)
+                            .fill(showDataAnalysisHub ? Color.purple : Color.clear)
                     )
                 }
                 .buttonStyle(.plain)
@@ -620,7 +621,7 @@ struct ContentView: View {
                 
                 Spacer()
                 
-                Text("Data Analysis Hub")
+                Text("Data Insights")
                     .font(.system(size: 18, weight: .semibold, design: .rounded))
                     .foregroundColor(.primary)
                 
@@ -641,9 +642,9 @@ struct ContentView: View {
                 
                 Divider()
                 
-                // Horizontal split: Spreadsheet list on left, Gemini chat on right
+                // Horizontal split: Spreadsheet list on left (flexible), Gemini chat pinned to right (fixed width)
                 HStack(spacing: 0) {
-                    // Left side: List of spreadsheets
+                    // Left side: List of spreadsheets (takes remaining space)
                     if savedSpreadsheets.isEmpty {
                         VStack(spacing: 20) {
                             Spacer()
@@ -728,7 +729,7 @@ struct ContentView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
                     
-                    // Resizable Vertical Divider
+                    // Resizable Vertical Divider (on left edge of Gemini panel)
                     Divider()
                         .background(Color(NSColor.separatorColor))
                         .frame(width: 4)
@@ -736,7 +737,9 @@ struct ContentView: View {
                         .gesture(
                             DragGesture()
                                 .onChanged { value in
-                                    let delta = -value.translation.width // Negative because dragging left increases width
+                                    // Dragging left (negative delta) increases Gemini width
+                                    // Dragging right (positive delta) decreases Gemini width
+                                    let delta = -value.translation.width
                                     let newWidth = geminiChatWidth + delta
                                     geminiChatWidth = max(minChatWidth, min(maxChatWidth, newWidth))
                                 }
@@ -749,21 +752,21 @@ struct ContentView: View {
                             }
                         }
                     
-                    // Right side: Gemini Chat Window (starts at 50% of screen width, resizable)
+                    // Right side: Gemini Chat Window (pinned to right, starts at 40% width, resizable)
                     GeminiChatView(
                         selectedSpreadsheets: selectedSpreadsheetsForGemini,
                         geminiAPIKey: $geminiCredentialManager.apiKey
                     )
-                    .frame(width: geminiChatWidth == 0 ? geometry.size.width * 0.5 : geminiChatWidth)
+                    .frame(width: geminiChatWidth == 0 ? geometry.size.width * 0.4 : geminiChatWidth)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .onAppear {
                 loadSavedSpreadsheets()
-                // Initialize to 50% of screen width if not already set
+                // Initialize to 40% of screen width if not already set
                 if geminiChatWidth == 0 {
-                    geminiChatWidth = geometry.size.width * 0.5
+                    geminiChatWidth = geometry.size.width * 0.4
                 }
             }
         }

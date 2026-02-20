@@ -9,7 +9,7 @@ import Foundation
 
 /// Represents time-based candlestick data for a stock
 /// Contains OHLCV (Open, High, Low, Close, Volume) data for a specific time period
-struct StockAggregate: Identifiable, Codable {
+struct StockAggregate: Identifiable, Codable, Equatable {
     let id: String // Unique identifier combining ticker and timestamp
     let ticker: String // Stock ticker symbol (e.g., "AAPL")
     let timestamp: Date // The timestamp for this aggregate period
@@ -34,7 +34,7 @@ struct StockAggregate: Identifiable, Codable {
 }
 
 /// Granularity options for stock aggregates
-enum AggregateGranularity: Int, CaseIterable, Identifiable {
+enum AggregateGranularity: Int, CaseIterable, Identifiable, Equatable {
     case oneMinute = 1
     case fiveMinutes = 5
     case fifteenMinutes = 15

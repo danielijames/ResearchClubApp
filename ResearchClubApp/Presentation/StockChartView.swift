@@ -31,7 +31,13 @@ struct StockChartView: View {
     let ticker: String
     
     // Chart type selection
-    @State private var chartType: ChartType = .candlestick
+    @State private var chartType: ChartType
+    
+    init(aggregates: [StockAggregate], ticker: String, initialChartType: ChartType = .candlestick) {
+        self.aggregates = aggregates
+        self.ticker = ticker
+        _chartType = State(initialValue: initialChartType)
+    }
     
     // Zoom and pan state
     @State private var visibleXRange: ClosedRange<Date>?

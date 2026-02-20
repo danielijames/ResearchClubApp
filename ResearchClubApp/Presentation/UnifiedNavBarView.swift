@@ -8,7 +8,6 @@
 import SwiftUI
 
 struct UnifiedNavBarView: View {
-    let title: String
     let showDataAnalysisHub: Bool
     let showBackButton: Bool
     let onBack: (() -> Void)?
@@ -30,13 +29,6 @@ struct UnifiedNavBarView: View {
                 }
                 .buttonStyle(.plain)
             }
-            
-            Spacer()
-            
-            // Title
-            Text(title)
-                .font(.system(size: 18, weight: .semibold, design: .rounded))
-                .foregroundColor(.primary)
             
             Spacer()
             

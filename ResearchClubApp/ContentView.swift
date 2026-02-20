@@ -65,7 +65,6 @@ struct ContentView: View {
                 
                 // Unified Navigation Bar
                 UnifiedNavBarView(
-                    title: navBarTitle,
                     showDataAnalysisHub: currentTab?.showGeminiChat ?? false,
                     showBackButton: shouldShowBackButton,
                     onBack: navBarBackAction,

@@ -24,6 +24,10 @@ struct TabBarView: View {
     
     var body: some View {
         HStack(spacing: 0) {
+            // Spacer for settings button (44px button + 8px padding + 8px spacing = 60px)
+            Spacer()
+                .frame(width: 60)
+            
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     // Search History Tab (pinned, always first)

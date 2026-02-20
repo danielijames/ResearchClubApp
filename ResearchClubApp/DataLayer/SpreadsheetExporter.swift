@@ -15,6 +15,7 @@ struct SavedSpreadsheet: Identifiable, Equatable {
     let granularity: AggregateGranularity
     let dataPointCount: Int
     let createdAt: Date
+    var isSelectedForLLM: Bool
     
     init(
         id: UUID = UUID(),
@@ -23,7 +24,8 @@ struct SavedSpreadsheet: Identifiable, Equatable {
         date: Date,
         granularity: AggregateGranularity,
         dataPointCount: Int,
-        createdAt: Date = Date()
+        createdAt: Date = Date(),
+        isSelectedForLLM: Bool = false
     ) {
         self.id = id
         self.fileURL = fileURL
@@ -32,6 +34,7 @@ struct SavedSpreadsheet: Identifiable, Equatable {
         self.granularity = granularity
         self.dataPointCount = dataPointCount
         self.createdAt = createdAt
+        self.isSelectedForLLM = isSelectedForLLM
     }
     
     var displayName: String {
@@ -48,6 +51,8 @@ struct SavedSpreadsheet: Identifiable, Equatable {
 
 class SpreadsheetExporter {
     private let documentsDirectory: URL
+    private let metadataFileURL: URL
+    private var llmSelectionMetadata: [UUID: Bool] = [:]
     
     init() {
         // Get the application's documents directory
@@ -57,6 +62,10 @@ class SpreadsheetExporter {
         
         // Create directory if it doesn't exist
         try? fileManager.createDirectory(at: documentsDirectory, withIntermediateDirectories: true)
+        
+        // Metadata file for LLM selection state
+        metadataFileURL = documentsDirectory.appendingPathComponent("llm_selections.json")
+        loadLLMSelections()
     }
     
     func exportToXLSX(
@@ -89,12 +98,15 @@ class SpreadsheetExporter {
         try csvContent.write(to: fileURL, atomically: true, encoding: .utf8)
         
         // Create saved spreadsheet metadata
+        let spreadsheetId = UUID()
         let savedSpreadsheet = SavedSpreadsheet(
+            id: spreadsheetId,
             fileURL: fileURL,
             ticker: ticker,
             date: date,
             granularity: granularity,
-            dataPointCount: aggregates.count
+            dataPointCount: aggregates.count,
+            isSelectedForLLM: false
         )
         
         print("✅ Exported \(aggregates.count) data points to: \(fileURL.path)")
@@ -141,13 +153,22 @@ class SpreadsheetExporter {
                         // Count lines in file to get data point count
                         let dataPointCount = countDataPoints(in: fileURL)
                         
+                        // Generate a stable ID based on file path for existing files
+                        // This ensures we can track LLM selections even after app restarts
+                        let stableId = generateStableID(from: fileURL.path)
+                        
+                        // Check if we have LLM selection metadata for this file
+                        let isSelectedForLLM = llmSelectionMetadata[stableId] ?? false
+                        
                         let spreadsheet = SavedSpreadsheet(
+                            id: stableId,
                             fileURL: fileURL,
                             ticker: ticker,
                             date: date,
                             granularity: granularity,
                             dataPointCount: dataPointCount,
-                            createdAt: creationDate
+                            createdAt: creationDate,
+                            isSelectedForLLM: isSelectedForLLM
                         )
                         spreadsheets.append(spreadsheet)
                     }
@@ -171,5 +192,59 @@ class SpreadsheetExporter {
     func deleteSpreadsheet(_ spreadsheet: SavedSpreadsheet) throws {
         let fileManager = FileManager.default
         try fileManager.removeItem(at: spreadsheet.fileURL)
+        // Remove from metadata
+        llmSelectionMetadata.removeValue(forKey: spreadsheet.id)
+        saveLLMSelections()
+    }
+    
+    func updateLLMSelection(for spreadsheet: SavedSpreadsheet, isSelected: Bool) {
+        llmSelectionMetadata[spreadsheet.id] = isSelected
+        saveLLMSelections()
+    }
+    
+    func getSelectedSpreadsheetsForLLM(from spreadsheets: [SavedSpreadsheet]) -> [SavedSpreadsheet] {
+        return spreadsheets.filter { $0.isSelectedForLLM }
+    }
+    
+    // MARK: - Private Methods
+    
+    private func generateStableID(from filePath: String) -> UUID {
+        // Create a UUID from the MD5 hash of the file path
+        let hash = filePath.md5Hash
+        // Take first 32 characters and format as UUID
+        let uuidString = String(hash.prefix(32))
+        
+        let part1 = String(uuidString.prefix(8))
+        let part2 = String(uuidString.dropFirst(8).prefix(4))
+        let part3 = String(uuidString.dropFirst(12).prefix(4))
+        let part4 = String(uuidString.dropFirst(16).prefix(4))
+        let part5 = String(uuidString.dropFirst(20).prefix(12))
+        
+        let formattedUUID = "\(part1)-\(part2)-\(part3)-\(part4)-\(part5)"
+        
+        return UUID(uuidString: formattedUUID) ?? UUID()
+    }
+    
+    private func loadLLMSelections() {
+        guard let data = try? Data(contentsOf: metadataFileURL),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Bool] else {
+            return
+        }
+        
+        // Convert string keys to UUIDs
+        for (key, value) in json {
+            if let uuid = UUID(uuidString: key) {
+                llmSelectionMetadata[uuid] = value
+            }
+        }
+    }
+    
+    private func saveLLMSelections() {
+        // Convert UUID keys to strings for JSON
+        let json: [String: Bool] = Dictionary(uniqueKeysWithValues: llmSelectionMetadata.map { ($0.key.uuidString, $0.value) })
+        
+        if let data = try? JSONSerialization.data(withJSONObject: json, options: .prettyPrinted) {
+            try? data.write(to: metadataFileURL)
+        }
     }
 }

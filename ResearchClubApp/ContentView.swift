@@ -18,7 +18,7 @@ struct ContentView: View {
     @State private var searchQueries: [SearchQuery] = []
     @State private var selectedQuery: SearchQuery?
     @State private var savedSpreadsheets: [SavedSpreadsheet] = []
-    @State private var showSpreadsheetsView: Bool = false
+    @State private var showDataAnalysisHub: Bool = false
     @State private var selectedSpreadsheetForText: SavedSpreadsheet?
     
     private let spreadsheetExporter = SpreadsheetExporter()
@@ -36,11 +36,11 @@ struct ContentView: View {
             sidebarView
                 .navigationSplitViewColumnWidth(min: 300, ideal: 350, max: 500)
         } detail: {
-            // Right Detail: Canvas View, List View, Spreadsheets View, or Text View
+            // Right Detail: Canvas View, List View, Data Analysis Hub, or Text View
             if let selectedSpreadsheet = selectedSpreadsheetForText {
                 spreadsheetTextView(spreadsheet: selectedSpreadsheet)
-            } else if showSpreadsheetsView {
-                spreadsheetsView
+            } else if showDataAnalysisHub {
+                dataAnalysisHubView
             } else if isCanvasMode {
                 CanvasView(items: $canvasItems)
             } else {
@@ -78,14 +78,14 @@ struct ContentView: View {
                         .padding(.horizontal)
                         .padding(.top, 8)
                     
-                    // Saved Spreadsheets Button
+                    // Data Analysis Hub Button
                     Button(action: {
-                        showSpreadsheetsView = true
+                        showDataAnalysisHub = true
                         loadSavedSpreadsheets()
                     }) {
                         HStack {
-                            Image(systemName: "doc.text")
-                            Text("Saved Spreadsheets (\(savedSpreadsheets.count))")
+                            Image(systemName: "chart.bar.doc.horizontal")
+                            Text("Data Analysis Hub (\(savedSpreadsheets.count))")
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 8)
@@ -487,14 +487,14 @@ struct ContentView: View {
         }
     }
     
-    // MARK: - Spreadsheets View
+    // MARK: - Data Analysis Hub View
     
-    private var spreadsheetsView: some View {
+    private var dataAnalysisHubView: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Header
             HStack {
                 Button(action: {
-                    showSpreadsheetsView = false
+                    showDataAnalysisHub = false
                 }) {
                     HStack {
                         Image(systemName: "chevron.left")
@@ -505,7 +505,7 @@ struct ContentView: View {
                 
                 Spacer()
                 
-                Text("Saved Spreadsheets")
+                Text("Data Analysis Hub")
                     .font(.title2)
                     .fontWeight(.bold)
                 
@@ -527,13 +527,13 @@ struct ContentView: View {
             if savedSpreadsheets.isEmpty {
                 VStack(spacing: 20) {
                     Spacer()
-                    Image(systemName: "doc.text")
+                    Image(systemName: "chart.bar.doc.horizontal")
                         .font(.system(size: 60))
                         .foregroundColor(.secondary)
-                    Text("No Spreadsheets Saved")
+                    Text("No Data Available")
                         .font(.title2)
                         .fontWeight(.semibold)
-                    Text("Fetched data will be automatically saved as XLSX files")
+                    Text("Fetched stock data will be automatically saved and available for analysis")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
@@ -543,8 +543,19 @@ struct ContentView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 List {
-                    ForEach(savedSpreadsheets) { spreadsheet in
+                    ForEach($savedSpreadsheets) { $spreadsheet in
                         HStack {
+                            // LLM Selection Checkbox
+                            Toggle("", isOn: Binding(
+                                get: { spreadsheet.isSelectedForLLM },
+                                set: { newValue in
+                                    spreadsheet.isSelectedForLLM = newValue
+                                    spreadsheetExporter.updateLLMSelection(for: spreadsheet, isSelected: newValue)
+                                }
+                            ))
+                            .toggleStyle(.checkbox)
+                            .help("Include in LLM analysis")
+                            
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(spreadsheet.displayName)
                                     .font(.headline)

@@ -37,13 +37,17 @@ enum ChatRole: String, Codable {
 struct GeminiChatView: View {
     let selectedSpreadsheets: [SavedSpreadsheet]
     @Binding var geminiAPIKey: String
+    @Binding var messages: [ChatMessage]
+    let tabId: UUID
     
-    @State private var messages: [ChatMessage] = []
     @State private var inputText: String = ""
     @State private var isSending: Bool = false
     @State private var errorMessage: String?
+    @FocusState private var isInputFocused: Bool
     
-    private let conversationStorageKey = "gemini_conversation"
+    private var conversationStorageKey: String {
+        "gemini_conversation_\(tabId.uuidString)"
+    }
     
     private var geminiService: GeminiService? {
         guard !geminiAPIKey.isEmpty else { return nil }
@@ -53,15 +57,12 @@ struct GeminiChatView: View {
     // MARK: - Persistence
     
     private func loadConversation() {
-        if let data = UserDefaults.standard.data(forKey: conversationStorageKey),
-           let decoded = try? JSONDecoder().decode([ChatMessage].self, from: data) {
-            messages = decoded
-        }
-    }
-    
-    private func saveConversation() {
-        if let encoded = try? JSONEncoder().encode(messages) {
-            UserDefaults.standard.set(encoded, forKey: conversationStorageKey)
+        // Load from UserDefaults if messages binding is empty
+        if messages.isEmpty {
+            if let data = UserDefaults.standard.data(forKey: conversationStorageKey),
+               let decoded = try? JSONDecoder().decode([ChatMessage].self, from: data) {
+                messages = decoded
+            }
         }
     }
     
@@ -178,14 +179,6 @@ struct GeminiChatView: View {
             // Input Area
             HStack(alignment: .bottom, spacing: 12) {
                 ZStack(alignment: .topLeading) {
-                    // Placeholder text
-                    if inputText.isEmpty {
-                        Text("Ask about your stock data...")
-                            .foregroundColor(Color(NSColor.placeholderTextColor))
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 8)
-                    }
-                    
                     // Multi-line text input
                     TextEditor(text: $inputText)
                         .font(.body)
@@ -196,9 +189,9 @@ struct GeminiChatView: View {
                         .cornerRadius(6)
                         .overlay(
                             RoundedRectangle(cornerRadius: 6)
-                                .stroke(Color(NSColor.separatorColor), lineWidth: 1)
+                                .stroke(isInputFocused ? Color.accentColor : Color(NSColor.separatorColor), lineWidth: isInputFocused ? 2 : 1)
                         )
-                        .disabled(isSending || geminiAPIKey.isEmpty || selectedSpreadsheets.isEmpty)
+                        .focused($isInputFocused)
                         .onKeyPress(.return) {
                             // Check if Shift is pressed using NSEvent
                             if let currentEvent = NSApp.currentEvent, currentEvent.modifierFlags.contains(.shift) {
@@ -215,6 +208,15 @@ struct GeminiChatView: View {
                                 return .handled
                             }
                         }
+                    
+                    // Placeholder text (only when empty and not focused)
+                    if inputText.isEmpty && !isInputFocused {
+                        Text("Ask about your stock data...")
+                            .foregroundColor(Color(NSColor.placeholderTextColor))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 12)
+                            .allowsHitTesting(false) // Don't block clicks to TextEditor
+                    }
                 }
                 
                 Button(action: sendMessage) {
@@ -226,7 +228,7 @@ struct GeminiChatView: View {
                     }
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSending || geminiAPIKey.isEmpty || selectedSpreadsheets.isEmpty)
+                .disabled(isSending)
             }
             .padding()
             .background(Color(NSColor.controlBackgroundColor))
@@ -234,18 +236,15 @@ struct GeminiChatView: View {
         .frame(maxWidth: .infinity)
         .background(Color(NSColor.windowBackgroundColor))
         .onAppear {
-            // Load persisted conversation first
-            loadConversation()
+            // Load persisted conversation first if messages are empty
+            if messages.isEmpty {
+                loadConversation()
+            }
             
             // Only add welcome message if conversation is empty and spreadsheets are selected
             if messages.isEmpty && !selectedSpreadsheets.isEmpty {
                 addWelcomeMessage()
-                saveConversation() // Save welcome message
             }
-        }
-        .onChange(of: messages.count) { oldValue, newValue in
-            // Save conversation whenever messages change
-            saveConversation()
         }
         .onChange(of: selectedSpreadsheets.count) { oldValue, newValue in
             // Don't reset conversation when spreadsheets change
@@ -265,29 +264,38 @@ struct GeminiChatView: View {
         
         What would you like to know?
         """
-        messages.append(ChatMessage(role: .assistant, content: welcomeText))
+        var updatedMessages = messages
+        updatedMessages.append(ChatMessage(role: .assistant, content: welcomeText))
+        messages = updatedMessages
     }
     
     private func sendMessage() {
         let userMessage = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !userMessage.isEmpty,
-              let service = geminiService,
-              !selectedSpreadsheets.isEmpty else {
+        
+        // Don't send if already sending or message is empty
+        guard !isSending, !userMessage.isEmpty else {
+            return
+        }
+        
+        // Check for API key and show error if missing
+        guard let service = geminiService else {
+            errorMessage = "Gemini API key is not configured. Please set it in settings."
             return
         }
         
         // Add user message
         let userChatMessage = ChatMessage(role: .user, content: userMessage)
-        messages.append(userChatMessage)
-        saveConversation() // Save immediately after adding user message
+        var updatedMessages = messages
+        updatedMessages.append(userChatMessage)
+        messages = updatedMessages
         inputText = ""
         errorMessage = nil
         isSending = true
         
         Task {
             do {
-                // Load selected spreadsheets data
-                let context = await loadSelectedSpreadsheetsData()
+                // Load selected spreadsheets data (empty string if none selected)
+                let context = selectedSpreadsheets.isEmpty ? "" : await loadSelectedSpreadsheetsData()
                 
                 // Build conversation history from previous messages (excluding welcome message)
                 // Convert ChatMessage to GeminiMessage format for API
@@ -302,8 +310,9 @@ struct GeminiChatView: View {
                 
                 // Add assistant response
                 await MainActor.run {
-                    messages.append(ChatMessage(role: .assistant, content: response))
-                    saveConversation() // Save after receiving response
+                    var updatedMessages = messages
+                    updatedMessages.append(ChatMessage(role: .assistant, content: response))
+                    messages = updatedMessages
                     isSending = false
                 }
             } catch {

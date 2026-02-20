@@ -131,6 +131,8 @@ struct ContentView: View {
             updateRepository()
             // Load saved spreadsheets immediately
             loadSavedSpreadsheets()
+            // Load messages for all tabs
+            loadMessagesForAllTabs()
             // Set initial selected tab (prefer first research tab, fallback to search history)
             if selectedTabId == nil {
                 if let firstResearchTab = tabs.first(where: { !$0.isSearchHistoryTab }) {
@@ -138,6 +140,12 @@ struct ContentView: View {
                 } else if let searchHistoryTab = tabs.first(where: { $0.isSearchHistoryTab }) {
                     selectedTabId = searchHistoryTab.id
                 }
+            }
+        }
+        .onChange(of: selectedTabId) { oldValue, newValue in
+            // Load messages when switching tabs
+            if let tabId = newValue, let index = tabs.firstIndex(where: { $0.id == tabId }) {
+                loadMessagesForTab(at: index)
             }
         }
     }
@@ -266,6 +274,31 @@ struct ContentView: View {
         }
     }
     
+    // MARK: - Message Persistence
+    
+    private func loadMessagesForAllTabs() {
+        for index in tabs.indices {
+            loadMessagesForTab(at: index)
+        }
+    }
+    
+    private func loadMessagesForTab(at index: Int) {
+        let tab = tabs[index]
+        let storageKey = "gemini_conversation_\(tab.id.uuidString)"
+        if let data = UserDefaults.standard.data(forKey: storageKey),
+           let decoded = try? JSONDecoder().decode([ChatMessage].self, from: data) {
+            tabs[index].geminiMessages = decoded
+        }
+    }
+    
+    private func saveMessagesForTab(at index: Int) {
+        let tab = tabs[index]
+        let storageKey = "gemini_conversation_\(tab.id.uuidString)"
+        if let encoded = try? JSONEncoder().encode(tab.geminiMessages) {
+            UserDefaults.standard.set(encoded, forKey: storageKey)
+        }
+    }
+    
     private func loadSavedSpreadsheets() {
         savedSpreadsheets = spreadsheetExporter.getAllSavedSpreadsheets()
     }
@@ -376,7 +409,16 @@ struct ContentView: View {
                         geminiAPIKey: Binding(
                             get: { geminiCredentialManager.apiKey },
                             set: { geminiCredentialManager.apiKey = $0 }
-                        )
+                        ),
+                        messages: Binding(
+                            get: { currentTab?.geminiMessages ?? [] },
+                            set: { newMessages in
+                                guard let index = currentTabIndex else { return }
+                                tabs[index].geminiMessages = newMessages
+                                saveMessagesForTab(at: index)
+                            }
+                        ),
+                        tabId: currentTab?.id ?? UUID()
                     )
                     .frame(
                         width: max(minChatWidth, geminiChatWidth > 0 ? geminiChatWidth : (cachedGeometryWidth > 0 ? cachedGeometryWidth * 0.4 : geometry.size.width * 0.4)),
@@ -422,6 +464,13 @@ struct ContentView: View {
                 // Show Data Analysis Hub as default content
                 DataAnalysisHubView(
                     spreadsheets: $savedSpreadsheets,
+                    selectedSpreadsheetIds: Binding(
+                        get: { currentTab?.selectedSpreadsheetIds ?? [] },
+                        set: { newValue in
+                            guard let index = currentTabIndex else { return }
+                            tabs[index].selectedSpreadsheetIds = newValue
+                        }
+                    ),
                     selectedSpreadsheetForText: Binding(
                         get: { currentTab?.selectedSpreadsheetForText },
                         set: { newValue in
@@ -451,7 +500,8 @@ struct ContentView: View {
     }
     
     private var selectedSpreadsheetsForGemini: [SavedSpreadsheet] {
-        savedSpreadsheets.filter { $0.isSelectedForLLM }
+        guard let currentTab = currentTab else { return [] }
+        return savedSpreadsheets.filter { currentTab.selectedSpreadsheetIds.contains($0.id) }
     }
     
     private func deleteSpreadsheet(_ spreadsheet: SavedSpreadsheet) {

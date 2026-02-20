@@ -9,6 +9,7 @@ import SwiftUI
 
 struct DataAnalysisHubView: View {
     @Binding var spreadsheets: [SavedSpreadsheet]
+    @Binding var selectedSpreadsheetIds: Set<UUID>
     @Binding var selectedSpreadsheetForText: SavedSpreadsheet?
     
     let spreadsheetExporter: SpreadsheetExporter
@@ -20,6 +21,7 @@ struct DataAnalysisHubView: View {
     var body: some View {
         SpreadsheetListView(
             spreadsheets: $spreadsheets,
+            selectedSpreadsheetIds: $selectedSpreadsheetIds,
             spreadsheetExporter: spreadsheetExporter,
             onSelectForText: onSelectForText,
             onDelete: onDelete,

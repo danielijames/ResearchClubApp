@@ -10,6 +10,7 @@ import AppKit
 
 struct SpreadsheetListView: View {
     @Binding var spreadsheets: [SavedSpreadsheet]
+    @Binding var selectedSpreadsheetIds: Set<UUID>
     let spreadsheetExporter: SpreadsheetExporter
     let onSelectForText: (SavedSpreadsheet) -> Void
     let onDelete: (SavedSpreadsheet) -> Void
@@ -41,6 +42,16 @@ struct SpreadsheetListView: View {
                         ForEach($spreadsheets) { $spreadsheet in
                             SpreadsheetCellView(
                                 spreadsheet: $spreadsheet,
+                                isSelected: Binding(
+                                    get: { selectedSpreadsheetIds.contains(spreadsheet.id) },
+                                    set: { isSelected in
+                                        if isSelected {
+                                            selectedSpreadsheetIds.insert(spreadsheet.id)
+                                        } else {
+                                            selectedSpreadsheetIds.remove(spreadsheet.id)
+                                        }
+                                    }
+                                ),
                                 spreadsheetExporter: spreadsheetExporter,
                                 formatDate: formatDate,
                                 onSelectForText: onSelectForText,
@@ -61,6 +72,7 @@ struct SpreadsheetListView: View {
 
 struct SpreadsheetCellView: View {
     @Binding var spreadsheet: SavedSpreadsheet
+    @Binding var isSelected: Bool
     let spreadsheetExporter: SpreadsheetExporter
     let formatDate: (Date) -> String
     let onSelectForText: (SavedSpreadsheet) -> Void
@@ -70,11 +82,11 @@ struct SpreadsheetCellView: View {
         HStack(spacing: 16) {
             // Selection indicator
             Circle()
-                .fill(spreadsheet.isSelectedForLLM ? Color.purple : Color.clear)
+                .fill(isSelected ? Color.purple : Color.clear)
                 .frame(width: 8, height: 8)
                 .overlay(
                     Circle()
-                        .stroke(spreadsheet.isSelectedForLLM ? Color.purple : Color(NSColor.separatorColor), lineWidth: 2)
+                        .stroke(isSelected ? Color.purple : Color(NSColor.separatorColor), lineWidth: 2)
                         .frame(width: 12, height: 12)
                 )
             
@@ -146,18 +158,17 @@ struct SpreadsheetCellView: View {
         .padding(.vertical, 14)
         .background(
             RoundedRectangle(cornerRadius: 10)
-                .fill(spreadsheet.isSelectedForLLM ? Color.purple.opacity(0.1) : Color(NSColor.windowBackgroundColor))
+                .fill(isSelected ? Color.purple.opacity(0.1) : Color(NSColor.windowBackgroundColor))
                 .overlay(
                     RoundedRectangle(cornerRadius: 10)
-                        .stroke(spreadsheet.isSelectedForLLM ? Color.purple.opacity(0.3) : Color(NSColor.separatorColor).opacity(0.5), lineWidth: 1)
+                        .stroke(isSelected ? Color.purple.opacity(0.3) : Color(NSColor.separatorColor).opacity(0.5), lineWidth: 1)
                 )
         )
         .contentShape(Rectangle())
         .onTapGesture {
             // Toggle selection on tap
-            spreadsheet.isSelectedForLLM.toggle()
-            spreadsheetExporter.updateLLMSelection(for: spreadsheet, isSelected: spreadsheet.isSelectedForLLM)
+            isSelected.toggle()
         }
-        .help(spreadsheet.isSelectedForLLM ? "Selected for Gemini analysis" : "Tap to select for Gemini analysis")
+        .help(isSelected ? "Selected for Gemini analysis" : "Tap to select for Gemini analysis")
     }
 }

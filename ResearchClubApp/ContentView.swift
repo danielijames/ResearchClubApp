@@ -21,7 +21,7 @@ struct ContentView: View {
     @State private var showDataAnalysisHub: Bool = false
     @State private var selectedSpreadsheetForText: SavedSpreadsheet?
     @StateObject private var geminiCredentialManager = GeminiCredentialManager()
-    @State private var geminiChatHeight: CGFloat = 300
+    @State private var geminiChatHeight: CGFloat = 0 // Will be set to 50% of screen height
     
     private let spreadsheetExporter = SpreadsheetExporter()
     private let minChatHeight: CGFloat = 200
@@ -537,155 +537,161 @@ struct ContentView: View {
     // MARK: - Data Analysis Hub View
     
     private var dataAnalysisHubView: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Header
-            HStack {
-                Button(action: {
-                    showDataAnalysisHub = false
-                }) {
-                    HStack {
-                        Image(systemName: "chevron.left")
-                        Text("Back")
-                    }
-                }
-                .buttonStyle(.bordered)
-                
-                Spacer()
-                
-                Text("Data Analysis Hub")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                
-                Spacer()
-                
-                Button(action: {
-                    loadSavedSpreadsheets()
-                }) {
-                    Image(systemName: "arrow.clockwise")
-                }
-                .buttonStyle(.bordered)
-            }
-            .padding()
-            .background(Color(NSColor.controlBackgroundColor))
-            
-            Divider()
-            
-            // List of spreadsheets (scrollable)
-            if savedSpreadsheets.isEmpty {
-                VStack(spacing: 20) {
-                    Spacer()
-                    Image(systemName: "chart.bar.doc.horizontal")
-                        .font(.system(size: 60))
-                        .foregroundColor(.secondary)
-                    Text("No Data Available")
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                    Text("Fetched stock data will be automatically saved and available for analysis")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                    Spacer()
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                List {
-                    ForEach($savedSpreadsheets) { $spreadsheet in
+        GeometryReader { geometry in
+            VStack(alignment: .leading, spacing: 0) {
+                // Header
+                HStack {
+                    Button(action: {
+                        showDataAnalysisHub = false
+                    }) {
                         HStack {
-                            // LLM Selection Checkbox
-                            Toggle("", isOn: Binding(
-                                get: { spreadsheet.isSelectedForLLM },
-                                set: { newValue in
-                                    spreadsheet.isSelectedForLLM = newValue
-                                    spreadsheetExporter.updateLLMSelection(for: spreadsheet, isSelected: newValue)
-                                }
-                            ))
-                            .toggleStyle(.checkbox)
-                            .help("Include in LLM analysis")
-                            
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(spreadsheet.displayName)
-                                    .font(.headline)
-                                    .foregroundColor(.primary)
-                                HStack(spacing: 12) {
-                                    Text("\(spreadsheet.dataPointCount) data points")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                    Text("•")
-                                        .foregroundColor(.secondary)
-                                    Text(formatDate(spreadsheet.createdAt))
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                            Spacer()
-                            
-                            // View as Text button
-                            Button(action: {
-                                selectedSpreadsheetForText = spreadsheet
-                            }) {
-                                Image(systemName: "text.alignleft")
-                            }
-                            .buttonStyle(.bordered)
-                            .help("View as Text")
-                            
-                            // Open in Finder button
-                            Button(action: {
-                                NSWorkspace.shared.activateFileViewerSelecting([spreadsheet.fileURL])
-                            }) {
-                                Image(systemName: "folder")
-                            }
-                            .buttonStyle(.bordered)
-                            .help("Show in Finder")
-                            
-                            // Delete button
-                            Button(action: {
-                                deleteSpreadsheet(spreadsheet)
-                            }) {
-                                Image(systemName: "trash")
-                            }
-                            .buttonStyle(.bordered)
-                            .foregroundColor(.red)
-                            .help("Delete")
+                            Image(systemName: "chevron.left")
+                            Text("Back")
                         }
-                        .padding(.vertical, 4)
                     }
+                    .buttonStyle(.bordered)
+                    
+                    Spacer()
+                    
+                    Text("Data Analysis Hub")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        loadSavedSpreadsheets()
+                    }) {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                    .buttonStyle(.bordered)
                 }
-                .listStyle(.inset(alternatesRowBackgrounds: true))
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-            
-            // Resizable Divider
-            Divider()
-                .background(Color(NSColor.separatorColor))
-                .frame(height: 4)
-                .contentShape(Rectangle())
-                .gesture(
-                    DragGesture()
-                        .onChanged { value in
-                            let delta = -value.translation.height // Negative because dragging up increases height
-                            let newHeight = geminiChatHeight + delta
-                            geminiChatHeight = max(minChatHeight, min(maxChatHeight, newHeight))
+                .padding()
+                .background(Color(NSColor.controlBackgroundColor))
+                
+                Divider()
+                
+                // List of spreadsheets (scrollable) - takes remaining space above Gemini chat
+                if savedSpreadsheets.isEmpty {
+                    VStack(spacing: 20) {
+                        Spacer()
+                        Image(systemName: "chart.bar.doc.horizontal")
+                            .font(.system(size: 60))
+                            .foregroundColor(.secondary)
+                        Text("No Data Available")
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                        Text("Fetched stock data will be automatically saved and available for analysis")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    List {
+                        ForEach($savedSpreadsheets) { $spreadsheet in
+                            HStack {
+                                // LLM Selection Checkbox
+                                Toggle("", isOn: Binding(
+                                    get: { spreadsheet.isSelectedForLLM },
+                                    set: { newValue in
+                                        spreadsheet.isSelectedForLLM = newValue
+                                        spreadsheetExporter.updateLLMSelection(for: spreadsheet, isSelected: newValue)
+                                    }
+                                ))
+                                .toggleStyle(.checkbox)
+                                .help("Include in LLM analysis")
+                                
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(spreadsheet.displayName)
+                                        .font(.headline)
+                                        .foregroundColor(.primary)
+                                    HStack(spacing: 12) {
+                                        Text("\(spreadsheet.dataPointCount) data points")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                        Text("•")
+                                            .foregroundColor(.secondary)
+                                        Text(formatDate(spreadsheet.createdAt))
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
+                                Spacer()
+                                
+                                // View as Text button
+                                Button(action: {
+                                    selectedSpreadsheetForText = spreadsheet
+                                }) {
+                                    Image(systemName: "text.alignleft")
+                                }
+                                .buttonStyle(.bordered)
+                                .help("View as Text")
+                                
+                                // Open in Finder button
+                                Button(action: {
+                                    NSWorkspace.shared.activateFileViewerSelecting([spreadsheet.fileURL])
+                                }) {
+                                    Image(systemName: "folder")
+                                }
+                                .buttonStyle(.bordered)
+                                .help("Show in Finder")
+                                
+                                // Delete button
+                                Button(action: {
+                                    deleteSpreadsheet(spreadsheet)
+                                }) {
+                                    Image(systemName: "trash")
+                                }
+                                .buttonStyle(.bordered)
+                                .foregroundColor(.red)
+                                .help("Delete")
+                            }
+                            .padding(.vertical, 4)
                         }
+                    }
+                    .listStyle(.inset(alternatesRowBackgrounds: true))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                
+                // Resizable Divider
+                Divider()
+                    .background(Color(NSColor.separatorColor))
+                    .frame(height: 4)
+                    .contentShape(Rectangle())
+                    .gesture(
+                        DragGesture()
+                            .onChanged { value in
+                                let delta = -value.translation.height // Negative because dragging up increases height
+                                let newHeight = geminiChatHeight + delta
+                                geminiChatHeight = max(minChatHeight, min(maxChatHeight, newHeight))
+                            }
+                    )
+                    .onHover { isHovering in
+                        if isHovering {
+                            NSCursor.resizeUpDown.push()
+                        } else {
+                            NSCursor.pop()
+                        }
+                    }
+                
+                // Gemini Chat Window (starts at 50% of screen height, resizable)
+                GeminiChatView(
+                    selectedSpreadsheets: selectedSpreadsheetsForGemini,
+                    geminiAPIKey: $geminiCredentialManager.apiKey
                 )
-                .onHover { isHovering in
-                    if isHovering {
-                        NSCursor.resizeUpDown.push()
-                    } else {
-                        NSCursor.pop()
-                    }
+                .frame(height: geminiChatHeight == 0 ? geometry.size.height * 0.5 : geminiChatHeight)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .onAppear {
+                loadSavedSpreadsheets()
+                // Initialize to 50% of screen height if not already set
+                if geminiChatHeight == 0 {
+                    geminiChatHeight = geometry.size.height * 0.5
                 }
-            
-            // Gemini Chat Window (resizable height)
-            GeminiChatView(
-                selectedSpreadsheets: selectedSpreadsheetsForGemini,
-                geminiAPIKey: $geminiCredentialManager.apiKey
-            )
-            .frame(height: geminiChatHeight)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onAppear {
-            loadSavedSpreadsheets()
+            }
         }
     }
     

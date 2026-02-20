@@ -11,6 +11,7 @@ import Foundation
 struct AppState: Codable {
     var selectedTabId: UUID?
     var tabs: [ResearchTab]
+    var cohorts: [Cohort] // All cohorts across the app
     var inputState: InputState
     var geminiChatWidth: CGFloat
     var isSidebarCollapsed: Bool
@@ -22,6 +23,7 @@ struct AppState: Codable {
             ResearchTab(id: ResearchTab.searchHistoryTabId, name: "Search History", isSearchHistoryTab: true),
             ResearchTab(name: "Research 1", showGeminiChat: false)
         ],
+        cohorts: [Cohort] = [],
         inputState: InputState = InputState(),
         geminiChatWidth: CGFloat = 0,
         isSidebarCollapsed: Bool = false,
@@ -29,6 +31,7 @@ struct AppState: Codable {
     ) {
         self.selectedTabId = selectedTabId
         self.tabs = tabs
+        self.cohorts = cohorts
         self.inputState = inputState
         self.geminiChatWidth = geminiChatWidth
         self.isSidebarCollapsed = isSidebarCollapsed

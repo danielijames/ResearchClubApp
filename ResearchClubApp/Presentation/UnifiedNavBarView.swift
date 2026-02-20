@@ -14,6 +14,7 @@ struct UnifiedNavBarView: View {
     let onBack: (() -> Void)?
     let onToggleDataAnalysisHub: () -> Void
     let onToggleSidebar: () -> Void
+    let onToggleCohorts: (() -> Void)?
     let onRefresh: (() -> Void)?
     
     var body: some View {
@@ -50,6 +51,22 @@ struct UnifiedNavBarView: View {
             
             // Action buttons
             HStack(spacing: 12) {
+                // Cohorts button
+                if let onToggleCohorts = onToggleCohorts {
+                    Button(action: onToggleCohorts) {
+                        Image(systemName: "tray.2")
+                            .font(.system(size: 13))
+                            .foregroundColor(.primary)
+                            .frame(width: 32, height: 32)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(Color.clear)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .help("Manage Cohorts")
+                }
+                
                 // Ask Gemini! button
                 Button(action: onToggleDataAnalysisHub) {
                     HStack(spacing: 6) {

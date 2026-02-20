@@ -11,23 +11,166 @@ struct DataAnalysisHubView: View {
     @Binding var spreadsheets: [SavedSpreadsheet]
     @Binding var selectedSpreadsheetIds: Set<UUID>
     @Binding var selectedSpreadsheetForText: SavedSpreadsheet?
+    @Binding var selectedCohortIds: Set<UUID>
     
+    let cohorts: [Cohort]
+    let currentTabCohortIds: Set<UUID>
     let spreadsheetExporter: SpreadsheetExporter
     let formatDate: (Date) -> String
     let onRefresh: () -> Void
     let onSelectForText: (SavedSpreadsheet) -> Void
-    let onDelete: (SavedSpreadsheet) -> Void
+    let onShowCohortManager: () -> Void
+    let onRemoveFromTab: (Set<UUID>) -> Void
+    let onAddCohortToTab: (UUID) -> Void
+    let onRemoveCohortFromTab: (UUID) -> Void
+    
+    @State private var multiSelectMode = false
+    @State private var selectedForRemoval: Set<UUID> = []
+    @State private var showCohortPicker = false
     
     var body: some View {
-        SpreadsheetListView(
-            spreadsheets: $spreadsheets,
-            selectedSpreadsheetIds: $selectedSpreadsheetIds,
-            spreadsheetExporter: spreadsheetExporter,
-            onSelectForText: onSelectForText,
-            onDelete: onDelete,
-            formatDate: formatDate,
-            isDragging: false
-        )
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        VStack(spacing: 0) {
+            // Header with action buttons
+            HStack {
+                Text("Data Analysis Hub")
+                    .font(.system(size: 16, weight: .semibold))
+                
+                Spacer()
+                
+                HStack(spacing: 8) {
+                    if multiSelectMode {
+                        // Remove from tab button
+                        if !selectedForRemoval.isEmpty {
+                            Button(action: {
+                                onRemoveFromTab(selectedForRemoval)
+                                selectedForRemoval = []
+                                multiSelectMode = false
+                            }) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "minus.circle")
+                                    Text("Remove from Tab (\(selectedForRemoval.count))")
+                                }
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.primary)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(Color(NSColor.controlBackgroundColor))
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        
+                        // Cancel multi-select
+                        Button(action: {
+                            multiSelectMode = false
+                            selectedForRemoval = []
+                        }) {
+                            Text("Cancel")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.primary)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                        }
+                        .buttonStyle(.plain)
+                    } else {
+                        // Multi-select button
+                        Button(action: {
+                            multiSelectMode = true
+                        }) {
+                            Image(systemName: "checkmark.circle")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.primary)
+                                .frame(width: 28, height: 28)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(Color(NSColor.controlBackgroundColor))
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .help("Select Multiple")
+                        
+                        // Modern Cohort Picker Button
+                        Button(action: {
+                            showCohortPicker.toggle()
+                        }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "tray.2.fill")
+                                    .font(.system(size: 12, weight: .semibold))
+                                Text("Add Cohort")
+                                    .font(.system(size: 13, weight: .medium))
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 7)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [Color.purple, Color.purple.opacity(0.8)]),
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
+                                    .shadow(color: Color.purple.opacity(0.3), radius: 4, x: 0, y: 2)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .popover(isPresented: $showCohortPicker, arrowEdge: .bottom) {
+                            CohortPickerView(
+                                cohorts: cohorts,
+                                currentTabCohortIds: currentTabCohortIds,
+                                onAddCohort: { cohortId in
+                                    onAddCohortToTab(cohortId)
+                                    showCohortPicker = false
+                                },
+                                onManageCohorts: {
+                                    showCohortPicker = false
+                                    onShowCohortManager()
+                                }
+                            )
+                            .frame(width: 320, height: 400)
+                        }
+                        
+                        // Refresh button
+                        Button(action: {
+                            onRefresh()
+                        }) {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.primary)
+                                .frame(width: 28, height: 28)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(Color(NSColor.controlBackgroundColor))
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .help("Refresh Spreadsheets")
+                    }
+                }
+            }
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            
+            Divider()
+            
+            SpreadsheetListView(
+                spreadsheets: $spreadsheets,
+                selectedSpreadsheetIds: $selectedSpreadsheetIds,
+                cohorts: cohorts.filter { currentTabCohortIds.contains($0.id) },
+                spreadsheetExporter: spreadsheetExporter,
+                onSelectForText: onSelectForText,
+                onDelete: { _ in }, // Not used - deletion moved to settings
+                formatDate: formatDate,
+                isDragging: false,
+                multiSelectMode: multiSelectMode,
+                selectedForRemoval: $selectedForRemoval,
+                selectedCohortIds: $selectedCohortIds,
+                onRemoveCohort: onRemoveCohortFromTab
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
     }
 }

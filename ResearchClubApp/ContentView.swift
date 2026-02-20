@@ -25,6 +25,7 @@ struct ContentView: View {
         tabs.filter { !$0.isSearchHistoryTab }.flatMap { $0.searchQueries }
     }
     @State private var savedSpreadsheets: [SavedSpreadsheet] = [] // Shared across all tabs
+    @State private var cohorts: [Cohort] = [] // All cohorts
     @StateObject private var geminiCredentialManager = GeminiCredentialManager()
     @State private var geminiChatWidth: CGFloat = 0 // Will be set to 40% of screen width (less prominent)
     @State private var showSettings = false
@@ -32,6 +33,8 @@ struct ContentView: View {
     @State private var dragStartWidth: CGFloat = 0
     @State private var cachedGeometryWidth: CGFloat = 0
     @State private var isSidebarCollapsed: Bool = false
+    @State private var showCohortManager = false
+    @State private var showDeletionManager = false
     
     private let spreadsheetExporter = SpreadsheetExporter()
     private let minChatWidth: CGFloat = 500
@@ -87,6 +90,9 @@ struct ContentView: View {
                         }
                         saveApplicationState()
                     },
+                    onToggleCohorts: {
+                        showCohortManager = true
+                    },
                     onRefresh: navBarRefreshAction
                 )
                 
@@ -134,6 +140,20 @@ struct ContentView: View {
                 isPresented: $showSettings,
                 onUpdate: {
                     updateRepository()
+                },
+                cohorts: $cohorts,
+                spreadsheets: $savedSpreadsheets,
+                spreadsheetExporter: spreadsheetExporter,
+                onCohortDeleted: { deletedCohortId in
+                    // Remove cohort from all tabs
+                    for index in tabs.indices {
+                        tabs[index].cohortIds.remove(deletedCohortId)
+                    }
+                    saveApplicationState()
+                },
+                onSpreadsheetDeleted: {
+                    loadSavedSpreadsheets()
+                    saveApplicationState()
                 }
             )
         }
@@ -186,6 +206,21 @@ struct ContentView: View {
         }
         .onChange(of: isSidebarCollapsed) { oldValue, newValue in
             saveApplicationState()
+        }
+        .onChange(of: cohorts) { oldValue, newValue in
+            saveApplicationState()
+        }
+        .sheet(isPresented: $showCohortManager) {
+            CohortManagementView(
+                cohorts: $cohorts,
+                spreadsheets: savedSpreadsheets,
+                currentTab: currentTab,
+                onAssignCohortsToTab: { cohortIds in
+                    guard let index = currentTabIndex else { return }
+                    tabs[index].cohortIds = cohortIds
+                    saveApplicationState()
+                }
+            )
         }
     }
     
@@ -355,6 +390,7 @@ struct ContentView: View {
         let appState = AppState(
             selectedTabId: selectedTabId,
             tabs: tabs,
+            cohorts: cohorts,
             inputState: inputState,
             geminiChatWidth: geminiChatWidth,
             isSidebarCollapsed: isSidebarCollapsed,
@@ -394,6 +430,9 @@ struct ContentView: View {
         
         // Restore sidebar collapsed state
         isSidebarCollapsed = savedState.isSidebarCollapsed
+        
+        // Restore cohorts
+        cohorts = savedState.cohorts
         
         print("✅ Restored application state from \(savedState.lastSavedAt)")
     }
@@ -576,6 +615,16 @@ struct ContentView: View {
                             }
                         }
                     ),
+                    selectedCohortIds: Binding(
+                        get: { currentTab?.selectedCohortIds ?? [] },
+                        set: { newValue in
+                            guard let index = currentTabIndex else { return }
+                            tabs[index].selectedCohortIds = newValue
+                            saveApplicationState()
+                        }
+                    ),
+                    cohorts: cohorts,
+                    currentTabCohortIds: currentTab?.cohortIds ?? [],
                     spreadsheetExporter: spreadsheetExporter,
                     formatDate: formatDate,
                     onRefresh: {
@@ -588,7 +637,25 @@ struct ContentView: View {
                             return updated
                         }
                     },
-                    onDelete: deleteSpreadsheet
+                    onShowCohortManager: {
+                        showCohortManager = true
+                    },
+                    onRemoveFromTab: { spreadsheetIds in
+                        guard let index = currentTabIndex else { return }
+                        // Remove from tab's selectedSpreadsheetIds
+                        tabs[index].selectedSpreadsheetIds.subtract(spreadsheetIds)
+                        saveApplicationState()
+                    },
+                    onAddCohortToTab: { cohortId in
+                        guard let index = currentTabIndex else { return }
+                        tabs[index].cohortIds.insert(cohortId)
+                        saveApplicationState()
+                    },
+                    onRemoveCohortFromTab: { cohortId in
+                        guard let index = currentTabIndex else { return }
+                        tabs[index].cohortIds.remove(cohortId)
+                        saveApplicationState()
+                    }
                 )
             }
         }
@@ -596,7 +663,17 @@ struct ContentView: View {
     
     private var selectedSpreadsheetsForGemini: [SavedSpreadsheet] {
         guard let currentTab = currentTab else { return [] }
-        return savedSpreadsheets.filter { currentTab.selectedSpreadsheetIds.contains($0.id) }
+        
+        // Start with directly selected spreadsheets
+        var spreadsheetIds = currentTab.selectedSpreadsheetIds
+        
+        // Add all spreadsheets from selected cohorts
+        let selectedCohorts = cohorts.filter { currentTab.selectedCohortIds.contains($0.id) }
+        for cohort in selectedCohorts {
+            spreadsheetIds.formUnion(cohort.spreadsheetIds)
+        }
+        
+        return savedSpreadsheets.filter { spreadsheetIds.contains($0.id) }
     }
     
     private func deleteSpreadsheet(_ spreadsheet: SavedSpreadsheet) {

@@ -17,8 +17,10 @@ struct ResearchTab: Identifiable, Equatable, Codable {
     var isSearchHistoryTab: Bool
     var geminiMessages: [ChatMessage]
     var selectedSpreadsheetIds: Set<UUID>
+    var cohortIds: Set<UUID> // Cohorts assigned to this tab
+    var selectedCohortIds: Set<UUID> // Cohorts selected for Gemini analysis
     
-    init(id: UUID = UUID(), name: String = "New Research", searchQueries: [SearchQuery] = [], selectedQuery: SearchQuery? = nil, showGeminiChat: Bool = false, selectedSpreadsheetForText: SavedSpreadsheet? = nil, isSearchHistoryTab: Bool = false, geminiMessages: [ChatMessage] = [], selectedSpreadsheetIds: Set<UUID> = []) {
+    init(id: UUID = UUID(), name: String = "New Research", searchQueries: [SearchQuery] = [], selectedQuery: SearchQuery? = nil, showGeminiChat: Bool = false, selectedSpreadsheetForText: SavedSpreadsheet? = nil, isSearchHistoryTab: Bool = false, geminiMessages: [ChatMessage] = [], selectedSpreadsheetIds: Set<UUID> = [], cohortIds: Set<UUID> = [], selectedCohortIds: Set<UUID> = []) {
         self.id = id
         self.name = name
         self.searchQueries = searchQueries
@@ -28,6 +30,8 @@ struct ResearchTab: Identifiable, Equatable, Codable {
         self.isSearchHistoryTab = isSearchHistoryTab
         self.geminiMessages = geminiMessages
         self.selectedSpreadsheetIds = selectedSpreadsheetIds
+        self.cohortIds = cohortIds
+        self.selectedCohortIds = selectedCohortIds
     }
     
     static func == (lhs: ResearchTab, rhs: ResearchTab) -> Bool {
@@ -38,7 +42,9 @@ struct ResearchTab: Identifiable, Equatable, Codable {
         lhs.selectedSpreadsheetForText?.id == rhs.selectedSpreadsheetForText?.id &&
         lhs.isSearchHistoryTab == rhs.isSearchHistoryTab &&
         lhs.geminiMessages.count == rhs.geminiMessages.count &&
-        lhs.selectedSpreadsheetIds == rhs.selectedSpreadsheetIds
+        lhs.selectedSpreadsheetIds == rhs.selectedSpreadsheetIds &&
+        lhs.cohortIds == rhs.cohortIds &&
+        lhs.selectedCohortIds == rhs.selectedCohortIds
     }
     
     static let searchHistoryTabId = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
@@ -48,7 +54,7 @@ struct ResearchTab: Identifiable, Equatable, Codable {
     enum CodingKeys: String, CodingKey {
         case id, name, searchQueries, selectedQuery, showGeminiChat
         case selectedSpreadsheetForText, isSearchHistoryTab, geminiMessages
-        case selectedSpreadsheetIds
+        case selectedSpreadsheetIds, cohortIds, selectedCohortIds
     }
     
     init(from decoder: Decoder) throws {
@@ -65,6 +71,20 @@ struct ResearchTab: Identifiable, Equatable, Codable {
         // Decode Set<UUID> as array
         let idsArray = try container.decode([UUID].self, forKey: .selectedSpreadsheetIds)
         selectedSpreadsheetIds = Set(idsArray)
+        
+        // Decode cohortIds (with fallback for older saved states)
+        if let cohortIdsArray = try? container.decode([UUID].self, forKey: .cohortIds) {
+            cohortIds = Set(cohortIdsArray)
+        } else {
+            cohortIds = []
+        }
+        
+        // Decode selectedCohortIds (with fallback for older saved states)
+        if let selectedCohortIdsArray = try? container.decode([UUID].self, forKey: .selectedCohortIds) {
+            selectedCohortIds = Set(selectedCohortIdsArray)
+        } else {
+            selectedCohortIds = []
+        }
     }
     
     func encode(to encoder: Encoder) throws {
@@ -80,5 +100,7 @@ struct ResearchTab: Identifiable, Equatable, Codable {
         
         // Encode Set<UUID> as array
         try container.encode(Array(selectedSpreadsheetIds), forKey: .selectedSpreadsheetIds)
+        try container.encode(Array(cohortIds), forKey: .cohortIds)
+        try container.encode(Array(selectedCohortIds), forKey: .selectedCohortIds)
     }
 }

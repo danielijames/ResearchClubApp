@@ -46,14 +46,19 @@ struct DeletionManagerView: View {
                         selectedTab = .spreadsheets
                         selectedSpreadsheetIds = []
                     }) {
-                        Text("Spreadsheets")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(selectedTab == .spreadsheets ? .primary : .secondary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            .background(
-                                selectedTab == .spreadsheets ? Color(NSColor.controlBackgroundColor) : Color.clear
-                            )
+                        HStack {
+                            Spacer()
+                            Text("Spreadsheets")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(selectedTab == .spreadsheets ? .primary : .secondary)
+                            Spacer()
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .contentShape(Rectangle())
+                        .background(
+                            selectedTab == .spreadsheets ? Color(NSColor.controlBackgroundColor) : Color.clear
+                        )
                     }
                     .buttonStyle(.plain)
                     
@@ -61,14 +66,19 @@ struct DeletionManagerView: View {
                         selectedTab = .cohorts
                         selectedCohortIds = []
                     }) {
-                        Text("Cohorts")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(selectedTab == .cohorts ? .primary : .secondary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            .background(
-                                selectedTab == .cohorts ? Color(NSColor.controlBackgroundColor) : Color.clear
-                            )
+                        HStack {
+                            Spacer()
+                            Text("Cohorts")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(selectedTab == .cohorts ? .primary : .secondary)
+                            Spacer()
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .contentShape(Rectangle())
+                        .background(
+                            selectedTab == .cohorts ? Color(NSColor.controlBackgroundColor) : Color.clear
+                        )
                     }
                     .buttonStyle(.plain)
                 }
@@ -231,8 +241,10 @@ struct SpreadsheetDeletionView: View {
                                     }
                                 }) {
                                     Image(systemName: selectedIds.contains(spreadsheet.id) ? "checkmark.circle.fill" : "circle")
-                                        .font(.system(size: 16))
+                                        .font(.system(size: 22))
                                         .foregroundColor(selectedIds.contains(spreadsheet.id) ? .red : .secondary)
+                                        .frame(width: 32, height: 32)
+                                        .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
                                 
@@ -347,8 +359,10 @@ struct CohortDeletionView: View {
                                     }
                                 }) {
                                     Image(systemName: selectedIds.contains(cohort.id) ? "checkmark.circle.fill" : "circle")
-                                        .font(.system(size: 16))
+                                        .font(.system(size: 22))
                                         .foregroundColor(selectedIds.contains(cohort.id) ? .red : .secondary)
+                                        .frame(width: 32, height: 32)
+                                        .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
                                 
@@ -366,8 +380,8 @@ struct CohortDeletionView: View {
                                 
                                 Spacer()
                             }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 16)
                             .background(
                                 RoundedRectangle(cornerRadius: 8)
                                     .fill(selectedIds.contains(cohort.id) ? Color.red.opacity(0.1) : Color(NSColor.windowBackgroundColor))

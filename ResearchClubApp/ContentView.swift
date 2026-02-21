@@ -114,8 +114,13 @@ struct ContentView: View {
                         )
                         .frame(width: 350)
                         .transition(.move(edge: .leading).combined(with: .opacity))
-                        
-                        Divider()
+                        .overlay(
+                            // Right border
+                            HStack {
+                                Spacer()
+                                Divider()
+                            }
+                        )
                     }
                     
                     // Right: Main Content Area or Search History
@@ -131,7 +136,10 @@ struct ContentView: View {
             }
             
             // Settings dropdown menu - fixed 44x44 in top left
-            SettingsButtonView(showSettings: $showSettings)
+            SettingsButtonView(
+                showSettings: $showSettings,
+                showDeletionManager: $showDeletionManager
+            )
         }
         .sheet(isPresented: $showSettings) {
             SettingsView(
@@ -141,6 +149,24 @@ struct ContentView: View {
                 onUpdate: {
                     updateRepository()
                 },
+                cohorts: $cohorts,
+                spreadsheets: $savedSpreadsheets,
+                spreadsheetExporter: spreadsheetExporter,
+                onCohortDeleted: { deletedCohortId in
+                    // Remove cohort from all tabs
+                    for index in tabs.indices {
+                        tabs[index].cohortIds.remove(deletedCohortId)
+                    }
+                    saveApplicationState()
+                },
+                onSpreadsheetDeleted: {
+                    loadSavedSpreadsheets()
+                    saveApplicationState()
+                }
+            )
+        }
+        .sheet(isPresented: $showDeletionManager) {
+            DeletionManagerView(
                 cohorts: $cohorts,
                 spreadsheets: $savedSpreadsheets,
                 spreadsheetExporter: spreadsheetExporter,
@@ -305,17 +331,24 @@ struct ContentView: View {
             tickerDetails: viewModel.tickerDetails
         )
         
-        // Add query to current research tab (not search history tab)
-        if let index = currentTabIndex, let tab = currentTab, !tab.isSearchHistoryTab {
-            tabs[index].searchQueries.insert(query, at: 0)
-        } else {
-            // If we're on search history tab or no tab selected, add to first research tab
-            if let firstResearchTabIndex = tabs.firstIndex(where: { !$0.isSearchHistoryTab }) {
-                tabs[firstResearchTabIndex].searchQueries.insert(query, at: 0)
-            }
+        // Add query to Search History tab
+        guard let searchHistoryTabIndex = tabs.firstIndex(where: { $0.isSearchHistoryTab }) else {
+            print("⚠️ Search History tab not found")
+            return
         }
         
-        print("✅ Created search query: \(query.displayName)")
+        var updatedTabs = tabs
+        var updatedSearchHistoryTab = updatedTabs[searchHistoryTabIndex]
+        updatedSearchHistoryTab.searchQueries.insert(query, at: 0)
+        updatedTabs[searchHistoryTabIndex] = updatedSearchHistoryTab
+        tabs = updatedTabs
+        
+        // Automatically switch to Search History tab
+        selectedTabId = ResearchTab.searchHistoryTabId
+        
+        saveApplicationState() // Save immediately after adding query
+        
+        print("✅ Created search query: \(query.displayName) and switched to Search History")
     }
     
     @MainActor
@@ -409,6 +442,16 @@ struct ContentView: View {
         // Restore tabs
         if !savedState.tabs.isEmpty {
             tabs = savedState.tabs
+            
+            // Ensure search history tab exists (for backward compatibility)
+            if !tabs.contains(where: { $0.isSearchHistoryTab }) {
+                let searchHistoryTab = ResearchTab(
+                    id: ResearchTab.searchHistoryTabId,
+                    name: "Search History",
+                    isSearchHistoryTab: true
+                )
+                tabs.insert(searchHistoryTab, at: 0)
+            }
         }
         
         // Restore selected tab
@@ -435,32 +478,37 @@ struct ContentView: View {
         cohorts = savedState.cohorts
         
         print("✅ Restored application state from \(savedState.lastSavedAt)")
+        if let searchHistoryTab = tabs.first(where: { $0.isSearchHistoryTab }) {
+            print("✅ Restored \(tabs.count) tabs with \(searchHistoryTab.searchQueries.count) search queries in Search History")
+        } else {
+            print("✅ Restored \(tabs.count) tabs")
+        }
     }
     
     // MARK: - Search History View
     
     private var searchHistoryView: some View {
         SearchQueriesListView(
-            searchQueries: allSearchQueries,
+            searchQueries: searchHistoryTab?.searchQueries ?? [],
             onSelectQuery: { query in
-                // Find which tab this query belongs to and switch to it
-                if let tab = tabs.first(where: { $0.searchQueries.contains(where: { $0.id == query.id }) }) {
-                    selectedTabId = tab.id
-                    updateCurrentTab { currentTab in
-                        var updated = currentTab
-                        withAnimation {
-                            updated.selectedQuery = query
-                        }
-                        return updated
+                // Select the query in the search history tab
+                guard let searchHistoryTabIndex = tabs.firstIndex(where: { $0.isSearchHistoryTab }) else { return }
+                updateCurrentTab { currentTab in
+                    var updated = currentTab
+                    withAnimation {
+                        updated.selectedQuery = query
                     }
+                    return updated
                 }
             },
             onClearAll: {
-                // Clear queries from all research tabs
-                for index in tabs.indices where !tabs[index].isSearchHistoryTab {
-                    tabs[index].searchQueries.removeAll()
-                    tabs[index].selectedQuery = nil
-                }
+                // Clear all queries from Search History tab
+                guard let searchHistoryTabIndex = tabs.firstIndex(where: { $0.isSearchHistoryTab }) else { return }
+                var updatedTabs = tabs
+                updatedTabs[searchHistoryTabIndex].searchQueries.removeAll()
+                updatedTabs[searchHistoryTabIndex].selectedQuery = nil
+                tabs = updatedTabs
+                saveApplicationState() // Save after clearing
             },
             formatDate: self.formatDate
         )
@@ -523,7 +571,9 @@ struct ContentView: View {
                 
                 // Gemini Chat Panel (when enabled)
                 if currentTab?.showGeminiChat == true {
+                    // Left border for Gemini panel
                     Divider()
+                        .background(Color(NSColor.separatorColor))
                     
                     ResizableDividerView(
                         isDragging: $isDraggingGeminiPanel,

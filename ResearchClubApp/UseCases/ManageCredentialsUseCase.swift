@@ -59,6 +59,16 @@ struct ManageCredentialsUseCase {
         return !trimmed.isEmpty && trimmed.count >= 10
     }
     
+    /// Saves the "save credentials" checkbox state
+    func setSaveCredentialsState(_ value: Bool) {
+        credentialStorage.setSaveCredentials(value)
+    }
+    
+    /// Gets the "save credentials" checkbox state
+    func getSaveCredentialsState() -> Bool {
+        return credentialStorage.getSaveCredentials()
+    }
+    
     // MARK: - Gemini API Key Management
     
     /// Loads saved Gemini API key from storage
@@ -102,6 +112,16 @@ struct ManageCredentialsUseCase {
     func validateGeminiAPIKey(_ apiKey: String) -> Bool {
         let trimmed = apiKey.trimmingCharacters(in: .whitespaces)
         return !trimmed.isEmpty && trimmed.count >= 10
+    }
+    
+    /// Saves the "save Gemini credentials" checkbox state
+    func setGeminiSaveCredentialsState(_ value: Bool) {
+        credentialStorage.setGeminiSaveCredentials(value)
+    }
+    
+    /// Gets the "save Gemini credentials" checkbox state
+    func getGeminiSaveCredentialsState() -> Bool {
+        return credentialStorage.getGeminiSaveCredentials()
     }
 }
 

@@ -26,13 +26,18 @@ class GeminiCredentialManager: ObservableObject {
     func loadSavedCredentials() {
         if let savedAPIKey = manageCredentialsUseCase.loadGeminiCredentials() {
             apiKey = savedAPIKey
-            saveCredentials = true
+            saveCredentials = manageCredentialsUseCase.getGeminiSaveCredentialsState()
+        } else {
+            saveCredentials = manageCredentialsUseCase.getGeminiSaveCredentialsState()
         }
     }
     
     /// Saves Gemini API key to storage if saveCredentials is true
     /// - Throws: CredentialManagementError if save fails or API key is invalid
     func saveCredentialsIfNeeded() throws {
+        // Always save the checkbox state
+        manageCredentialsUseCase.setGeminiSaveCredentialsState(saveCredentials)
+        
         if saveCredentials {
             if apiKey.isEmpty {
                 // If checkbox is checked but field is empty, delete saved credentials

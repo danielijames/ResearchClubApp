@@ -153,8 +153,13 @@ struct DataAnalysisHubView: View {
             }
             .padding()
             .background(Color(NSColor.controlBackgroundColor))
-            
-            Divider()
+            .overlay(
+                // Bottom border
+                VStack {
+                    Spacer()
+                    Divider()
+                }
+            )
             
             SpreadsheetListView(
                 spreadsheets: $spreadsheets,

@@ -10,6 +10,7 @@ import AppKit
 
 struct SettingsButtonView: View {
     @Binding var showSettings: Bool
+    @Binding var showDeletionManager: Bool
     
     var body: some View {
         Menu {
@@ -17,6 +18,12 @@ struct SettingsButtonView: View {
                 showSettings = true
             }) {
                 Label("API Key Manager", systemImage: "key.fill")
+            }
+            
+            Button(action: {
+                showDeletionManager = true
+            }) {
+                Label("Deletion Manager", systemImage: "trash")
             }
             
             Divider()

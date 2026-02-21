@@ -12,6 +12,8 @@ class CredentialStorage {
     private let userDefaults = UserDefaults.standard
     private let apiKeyKey = "massive_api_key"
     private let geminiApiKeyKey = "gemini_api_key"
+    private let saveCredentialsKey = "massive_save_credentials"
+    private let geminiSaveCredentialsKey = "gemini_save_credentials"
     
     /// Saves the API key to UserDefaults
     /// - Parameter apiKey: The API key to save
@@ -36,6 +38,16 @@ class CredentialStorage {
         return getAPIKey() != nil
     }
     
+    /// Saves the "save credentials" checkbox state
+    func setSaveCredentials(_ value: Bool) {
+        userDefaults.set(value, forKey: saveCredentialsKey)
+    }
+    
+    /// Gets the "save credentials" checkbox state
+    func getSaveCredentials() -> Bool {
+        return userDefaults.bool(forKey: saveCredentialsKey)
+    }
+    
     // MARK: - Gemini API Key Storage
     
     func saveGeminiAPIKey(_ apiKey: String) {
@@ -52,6 +64,16 @@ class CredentialStorage {
     
     func hasSavedGeminiCredentials() -> Bool {
         return getGeminiAPIKey() != nil
+    }
+    
+    /// Saves the "save Gemini credentials" checkbox state
+    func setGeminiSaveCredentials(_ value: Bool) {
+        userDefaults.set(value, forKey: geminiSaveCredentialsKey)
+    }
+    
+    /// Gets the "save Gemini credentials" checkbox state
+    func getGeminiSaveCredentials() -> Bool {
+        return userDefaults.bool(forKey: geminiSaveCredentialsKey)
     }
 }
 

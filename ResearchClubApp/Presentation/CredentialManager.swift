@@ -26,13 +26,18 @@ class CredentialManager: ObservableObject {
     func loadSavedCredentials() {
         if let savedAPIKey = manageCredentialsUseCase.loadSavedCredentials() {
             apiKey = savedAPIKey
-            saveCredentials = true
+            saveCredentials = manageCredentialsUseCase.getSaveCredentialsState()
+        } else {
+            saveCredentials = manageCredentialsUseCase.getSaveCredentialsState()
         }
     }
     
     /// Saves credentials to secure storage if saveCredentials is true
     /// - Throws: CredentialManagementError or CredentialStorageError if save fails
     func saveCredentialsIfNeeded() throws {
+        // Always save the checkbox state
+        manageCredentialsUseCase.setSaveCredentialsState(saveCredentials)
+        
         if saveCredentials {
             if apiKey.isEmpty {
                 // If checkbox is checked but field is empty, delete saved credentials

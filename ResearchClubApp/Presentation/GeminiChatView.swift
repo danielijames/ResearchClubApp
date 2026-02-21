@@ -108,8 +108,13 @@ struct GeminiChatView: View {
             }
             .padding()
             .background(Color(NSColor.controlBackgroundColor))
-            
-            Divider()
+            .overlay(
+                // Bottom border
+                VStack {
+                    Spacer()
+                    Divider()
+                }
+            )
             
             // Chat Messages
             ScrollViewReader { proxy in

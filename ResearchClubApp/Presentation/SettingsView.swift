@@ -19,8 +19,6 @@ struct SettingsView: View {
     let onCohortDeleted: (UUID) -> Void
     let onSpreadsheetDeleted: () -> Void
     
-    @State private var showDeletionManager = false
-    
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Header
@@ -106,58 +104,16 @@ struct SettingsView: View {
                     .padding()
                     .background(Color(NSColor.controlBackgroundColor))
                     .cornerRadius(8)
-                    
-                    Divider()
-                    
-                    // Deletion Management Section
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Data Management")
-                            .font(.headline)
-                            .foregroundColor(.primary)
-                        
-                        Text("Permanently delete cohorts and spreadsheets")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        
-                        Button(action: {
-                            showDeletionManager = true
-                        }) {
-                            HStack(spacing: 8) {
-                                Image(systemName: "trash")
-                                Text("Open Deletion Manager")
-                            }
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .fill(Color.red)
-                            )
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .padding()
-                    .background(Color(NSColor.controlBackgroundColor))
-                    .cornerRadius(8)
                 }
                 .padding()
             }
         }
         .frame(width: 500, height: 500)
         .background(Color(NSColor.windowBackgroundColor))
-        .sheet(isPresented: $showDeletionManager) {
-            DeletionManagerView(
-                cohorts: $cohorts,
-                spreadsheets: $spreadsheets,
-                spreadsheetExporter: spreadsheetExporter,
-                onCohortDeleted: onCohortDeleted,
-                onSpreadsheetDeleted: onSpreadsheetDeleted
-            )
-        }
     }
     
     private func saveCredentials() {
+        // This is called by onUpdate callback, but credentials are saved directly via onChange handlers
         onUpdate?()
     }
 }

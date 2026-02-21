@@ -102,5 +102,12 @@ struct UnifiedNavBarView: View {
             Color(NSColor.controlBackgroundColor)
                 .shadow(color: .black.opacity(0.05), radius: 1, y: 1)
         )
+        .overlay(
+            // Bottom border
+            VStack {
+                Spacer()
+                Divider()
+            }
+        )
     }
 }

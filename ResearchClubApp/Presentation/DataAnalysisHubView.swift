@@ -81,17 +81,19 @@ struct DataAnalysisHubView: View {
                             Button(action: {
                                 multiSelectMode = true
                             }) {
-                                Image(systemName: "checkmark.circle")
-                                    .font(.system(size: 13, weight: .medium))
+                                Text("EDIT")
+                                    .font(.system(size: 12, weight: .medium))
                                     .foregroundColor(.primary)
-                                    .frame(width: 28, height: 36)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .frame(height: 36)
                                     .background(
                                         RoundedRectangle(cornerRadius: 6)
                                             .fill(Color(NSColor.controlBackgroundColor))
                                     )
                             }
                             .buttonStyle(.plain)
-                            .help("Select Multiple")
+                            .help("Edit")
                         }
                         
                         // Add Spreadsheet button - direct access

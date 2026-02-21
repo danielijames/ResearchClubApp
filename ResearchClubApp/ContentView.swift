@@ -161,34 +161,61 @@ struct ContentView: View {
                                 .frame(maxWidth: .infinity)
                                 .id("queryDetail-\(selectedQuery.id.uuidString)")
                         } else {
-                            let searchHistoryQueries = tabs.first(where: { $0.isSearchHistoryTab })?.searchQueries ?? []
-                            let _ = print("🔍 Rendering Search History view - queries count: \(searchHistoryQueries.count), tab selected: \(selectedTabId?.uuidString ?? "nil")")
-                            SearchQueriesListView(
-                                searchQueries: searchHistoryQueries,
-                                onSelectQuery: { query in
-                                    // Select the query in the search history tab
-                                    guard let searchHistoryTabIndex = tabs.firstIndex(where: { $0.isSearchHistoryTab }) else { return }
-                                    updateCurrentTab { currentTab in
-                                        var updated = currentTab
-                                        withAnimation {
-                                            updated.selectedQuery = query
+                            if let searchHistoryTabIndex = tabs.firstIndex(where: { $0.isSearchHistoryTab }) {
+                                let _ = print("🔍 Rendering Search History view - queries count: \(tabs[searchHistoryTabIndex].searchQueries.count), tab selected: \(selectedTabId?.uuidString ?? "nil")")
+                                SearchQueriesListView(
+                                    searchQueries: Binding(
+                                        get: { tabs[searchHistoryTabIndex].searchQueries },
+                                        set: { newQueries in
+                                            tabs[searchHistoryTabIndex].searchQueries = newQueries
+                                            saveApplicationState()
                                         }
-                                        return updated
-                                    }
-                                },
-                                onClearAll: {
-                                    // Clear all queries from Search History tab
-                                    guard let searchHistoryTabIndex = tabs.firstIndex(where: { $0.isSearchHistoryTab }) else { return }
-                                    var updatedTabs = tabs
-                                    updatedTabs[searchHistoryTabIndex].searchQueries.removeAll()
-                                    updatedTabs[searchHistoryTabIndex].selectedQuery = nil
-                                    tabs = updatedTabs
-                                    saveApplicationState() // Save after clearing
-                                },
-                                formatDate: self.formatDate
-                            )
-                            .frame(maxWidth: .infinity)
-                            .id("searchHistory-\(searchHistoryQueries.count)-\(searchHistoryQueries.map { $0.id.uuidString }.joined(separator: "-"))")
+                                    ),
+                                    onSelectQuery: { query in
+                                        // Select the query in the search history tab
+                                        updateCurrentTab { currentTab in
+                                            var updated = currentTab
+                                            withAnimation {
+                                                updated.selectedQuery = query
+                                            }
+                                            return updated
+                                        }
+                                    },
+                                    onClearAll: {
+                                        // Clear all queries from Search History tab
+                                        var updatedTabs = tabs
+                                        updatedTabs[searchHistoryTabIndex].searchQueries.removeAll()
+                                        updatedTabs[searchHistoryTabIndex].selectedQuery = nil
+                                        tabs = updatedTabs
+                                        saveApplicationState() // Save after clearing
+                                    },
+                                    onDelete: { queryIds in
+                                        // Delete selected queries
+                                        var updatedTabs = tabs
+                                        updatedTabs[searchHistoryTabIndex].searchQueries.removeAll { queryIds.contains($0.id) }
+                                        // Clear selection if deleted query was selected
+                                        if let selectedQuery = updatedTabs[searchHistoryTabIndex].selectedQuery,
+                                           queryIds.contains(selectedQuery.id) {
+                                            updatedTabs[searchHistoryTabIndex].selectedQuery = nil
+                                        }
+                                        tabs = updatedTabs
+                                        saveApplicationState()
+                                    },
+                                    onMove: { source, destination in
+                                        // Reorder queries
+                                        var updatedTabs = tabs
+                                        updatedTabs[searchHistoryTabIndex].searchQueries.move(fromOffsets: source, toOffset: destination)
+                                        tabs = updatedTabs
+                                        saveApplicationState()
+                                    },
+                                    formatDate: self.formatDate
+                                )
+                                .frame(maxWidth: .infinity)
+                                .id("searchHistory-\(tabs[searchHistoryTabIndex].searchQueries.count)-\(tabs[searchHistoryTabIndex].searchQueries.map { $0.id.uuidString }.joined(separator: "-"))")
+                            } else {
+                                EmptyView()
+                                    .frame(maxWidth: .infinity)
+                            }
                         }
                     } else {
                         mainContentView
@@ -644,30 +671,57 @@ struct ContentView: View {
     private var searchHistoryView: some View {
         let queries = searchHistoryTab?.searchQueries ?? []
         let _ = print("🔍 searchHistoryView computed - queries count: \(queries.count)")
-        return SearchQueriesListView(
-            searchQueries: queries,
-            onSelectQuery: { query in
-                // Select the query in the search history tab
-                guard let searchHistoryTabIndex = tabs.firstIndex(where: { $0.isSearchHistoryTab }) else { return }
-                updateCurrentTab { currentTab in
-                    var updated = currentTab
-                    withAnimation {
-                        updated.selectedQuery = query
+        if let searchHistoryTabIndex = tabs.firstIndex(where: { $0.isSearchHistoryTab }) {
+            return AnyView(SearchQueriesListView(
+                searchQueries: Binding(
+                    get: { tabs[searchHistoryTabIndex].searchQueries },
+                    set: { newQueries in
+                        tabs[searchHistoryTabIndex].searchQueries = newQueries
+                        saveApplicationState()
                     }
-                    return updated
-                }
-            },
-            onClearAll: {
-                // Clear all queries from Search History tab
-                guard let searchHistoryTabIndex = tabs.firstIndex(where: { $0.isSearchHistoryTab }) else { return }
-                var updatedTabs = tabs
-                updatedTabs[searchHistoryTabIndex].searchQueries.removeAll()
-                updatedTabs[searchHistoryTabIndex].selectedQuery = nil
-                tabs = updatedTabs
-                saveApplicationState() // Save after clearing
-            },
-            formatDate: self.formatDate
-        )
+                ),
+                onSelectQuery: { query in
+                    // Select the query in the search history tab
+                    updateCurrentTab { currentTab in
+                        var updated = currentTab
+                        withAnimation {
+                            updated.selectedQuery = query
+                        }
+                        return updated
+                    }
+                },
+                onClearAll: {
+                    // Clear all queries from Search History tab
+                    var updatedTabs = tabs
+                    updatedTabs[searchHistoryTabIndex].searchQueries.removeAll()
+                    updatedTabs[searchHistoryTabIndex].selectedQuery = nil
+                    tabs = updatedTabs
+                    saveApplicationState() // Save after clearing
+                },
+                onDelete: { queryIds in
+                    // Delete selected queries
+                    var updatedTabs = tabs
+                    updatedTabs[searchHistoryTabIndex].searchQueries.removeAll { queryIds.contains($0.id) }
+                    // Clear selection if deleted query was selected
+                    if let selectedQuery = updatedTabs[searchHistoryTabIndex].selectedQuery,
+                       queryIds.contains(selectedQuery.id) {
+                        updatedTabs[searchHistoryTabIndex].selectedQuery = nil
+                    }
+                    tabs = updatedTabs
+                    saveApplicationState()
+                },
+                onMove: { source, destination in
+                    // Reorder queries
+                    var updatedTabs = tabs
+                    updatedTabs[searchHistoryTabIndex].searchQueries.move(fromOffsets: source, toOffset: destination)
+                    tabs = updatedTabs
+                    saveApplicationState()
+                },
+                formatDate: self.formatDate
+            ))
+        } else {
+            return AnyView(EmptyView())
+        }
     }
     
     // MARK: - Navigation Bar Helpers

@@ -103,11 +103,29 @@ struct ContentView: View {
                         StockQuerySidebarView(
                             viewModel: viewModel,
                             onFetchData: {
+                                print("🔵 Fetch Data button tapped")
+                                print("   Ticker: \(viewModel.ticker)")
+                                print("   Start Date: \(viewModel.startDate)")
+                                print("   End Date: \(viewModel.endDate)")
+                                print("   Granularity: \(viewModel.granularity.displayName)")
                                 Task {
+                                    print("🔵 Starting fetchStockData()")
                                     await viewModel.fetchStockData()
+                                    print("🔵 fetchStockData() completed")
+                                    print("   Aggregates count: \(viewModel.aggregates.count)")
+                                    print("   Error message: \(viewModel.errorMessage ?? "none")")
+                                    
                                     if !viewModel.aggregates.isEmpty {
+                                        print("🔵 Aggregates found, saving to spreadsheet...")
                                         saveToSpreadsheet()
+                                        print("🔵 Creating search query...")
                                         createSearchQuery()
+                                        print("🔵 Done with save and query creation")
+                                    } else {
+                                        print("⚠️ No aggregates returned, skipping save")
+                                        if let error = viewModel.errorMessage {
+                                            print("   Error: \(error)")
+                                        }
                                     }
                                 }
                             }
@@ -125,8 +143,34 @@ struct ContentView: View {
                     
                     // Right: Main Content Area or Search History
                     if currentTab?.isSearchHistoryTab == true {
-                        searchHistoryView
-                            .frame(maxWidth: .infinity)
+                        let searchHistoryQueries = tabs.first(where: { $0.isSearchHistoryTab })?.searchQueries ?? []
+                        let _ = print("🔍 Rendering Search History view - queries count: \(searchHistoryQueries.count), tab selected: \(selectedTabId?.uuidString ?? "nil")")
+                        SearchQueriesListView(
+                            searchQueries: searchHistoryQueries,
+                            onSelectQuery: { query in
+                                // Select the query in the search history tab
+                                guard let searchHistoryTabIndex = tabs.firstIndex(where: { $0.isSearchHistoryTab }) else { return }
+                                updateCurrentTab { currentTab in
+                                    var updated = currentTab
+                                    withAnimation {
+                                        updated.selectedQuery = query
+                                    }
+                                    return updated
+                                }
+                            },
+                            onClearAll: {
+                                // Clear all queries from Search History tab
+                                guard let searchHistoryTabIndex = tabs.firstIndex(where: { $0.isSearchHistoryTab }) else { return }
+                                var updatedTabs = tabs
+                                updatedTabs[searchHistoryTabIndex].searchQueries.removeAll()
+                                updatedTabs[searchHistoryTabIndex].selectedQuery = nil
+                                tabs = updatedTabs
+                                saveApplicationState() // Save after clearing
+                            },
+                            formatDate: self.formatDate
+                        )
+                        .frame(maxWidth: .infinity)
+                        .id("searchHistory-\(searchHistoryQueries.count)-\(searchHistoryQueries.map { $0.id.uuidString }.joined(separator: "-"))")
                     } else {
                         mainContentView
                             .frame(maxWidth: .infinity)
@@ -184,6 +228,11 @@ struct ContentView: View {
             )
         }
         .onAppear {
+            print("🚀 ContentView.onAppear() called")
+            // Load saved credentials first
+            credentialManager.loadSavedCredentials()
+            print("   CredentialManager API key loaded: \(credentialManager.apiKey.isEmpty ? "empty" : "\(credentialManager.apiKey.prefix(8))...")")
+            
             // Load application state first
             loadApplicationState()
             // Update repository with current settings
@@ -200,6 +249,7 @@ struct ContentView: View {
                     selectedTabId = searchHistoryTab.id
                 }
             }
+            print("✅ ContentView initialization complete")
         }
         .onChange(of: selectedTabId) { oldValue, newValue in
             // Load messages when switching tabs
@@ -288,8 +338,14 @@ struct ContentView: View {
     
     
     private func updateRepository() {
+        print("🔄 updateRepository() called")
+        print("   CredentialManager API key length: \(credentialManager.apiKey.count)")
+        print("   CredentialManager API key prefix: \(credentialManager.apiKey.prefix(8))...")
+        print("   Has valid credentials: \(credentialManager.hasValidCredentials)")
+        
         // Always use real repository - require valid credentials
         guard let repository = credentialManager.createRepository() else {
+            print("⚠️ No valid repository created, using empty key repository")
             // If no valid credentials, create repository with empty key (will fail API calls)
             // User must provide credentials in Settings
             let emptyRepository = MassiveRepositoryImpl(apiKey: "")
@@ -297,6 +353,7 @@ struct ContentView: View {
             return
         }
         
+        print("✅ Created repository with API key length: \(credentialManager.apiKey.count)")
         // Update the existing ViewModel's repository
         viewModel.updateRepository(repository)
     }
@@ -312,14 +369,20 @@ struct ContentView: View {
     
     @MainActor
     private func createSearchQuery() {
+        print("📝 createSearchQuery() called")
         let ticker = viewModel.ticker.uppercased()
         let aggregates = viewModel.aggregates
         let granularity = viewModel.granularity
         // Use startDate as the primary date for display purposes
         let date = viewModel.startDate
         
+        print("   Ticker: \(ticker)")
+        print("   Aggregates count: \(aggregates.count)")
+        print("   Granularity: \(granularity.displayName)")
+        print("   Date: \(date)")
+        
         guard !aggregates.isEmpty else {
-            print("⚠️ No aggregates to display")
+            print("❌ No aggregates to display, cannot create search query")
             return
         }
         
@@ -331,24 +394,82 @@ struct ContentView: View {
             tickerDetails: viewModel.tickerDetails
         )
         
+        print("✅ Created SearchQuery: \(query.displayName)")
+        print("   Query ID: \(query.id)")
+        print("   Query aggregates count: \(query.aggregates.count)")
+        
         // Add query to Search History tab
         guard let searchHistoryTabIndex = tabs.firstIndex(where: { $0.isSearchHistoryTab }) else {
-            print("⚠️ Search History tab not found")
+            print("⚠️ Search History tab not found, creating it")
+            // Create search history tab if it doesn't exist
+            let searchHistoryTab = ResearchTab(
+                id: ResearchTab.searchHistoryTabId,
+                name: "Search History",
+                isSearchHistoryTab: true
+            )
+            tabs.insert(searchHistoryTab, at: 0)
+            // Try again with the new tab
+            guard let newIndex = tabs.firstIndex(where: { $0.isSearchHistoryTab }) else {
+                print("❌ Failed to create Search History tab")
+                return
+            }
+            var updatedTabs = tabs
+            var updatedSearchHistoryTab = updatedTabs[newIndex]
+            updatedSearchHistoryTab.searchQueries.insert(query, at: 0)
+            updatedTabs[newIndex] = updatedSearchHistoryTab
+            
+            // Update tabs array to trigger SwiftUI update
+            withAnimation {
+                tabs = updatedTabs
+            }
+            
+            // Automatically switch to Search History tab
+            withAnimation {
+                selectedTabId = ResearchTab.searchHistoryTabId
+            }
+            
+            saveApplicationState()
+            print("✅ Created search query: \(query.displayName) and switched to Search History (tab created)")
+            print("   Search History now has \(updatedSearchHistoryTab.searchQueries.count) queries")
             return
         }
+        
+        print("   Found Search History tab at index: \(searchHistoryTabIndex)")
+        print("   Current queries in tab: \(tabs[searchHistoryTabIndex].searchQueries.count)")
         
         var updatedTabs = tabs
         var updatedSearchHistoryTab = updatedTabs[searchHistoryTabIndex]
         updatedSearchHistoryTab.searchQueries.insert(query, at: 0)
         updatedTabs[searchHistoryTabIndex] = updatedSearchHistoryTab
-        tabs = updatedTabs
+        
+        print("   After insert, queries count: \(updatedSearchHistoryTab.searchQueries.count)")
+        
+        // Update tabs array to trigger SwiftUI update
+        withAnimation {
+            tabs = updatedTabs
+        }
         
         // Automatically switch to Search History tab
-        selectedTabId = ResearchTab.searchHistoryTabId
+        withAnimation {
+            selectedTabId = ResearchTab.searchHistoryTabId
+        }
         
         saveApplicationState() // Save immediately after adding query
         
         print("✅ Created search query: \(query.displayName) and switched to Search History")
+        print("   Search History now has \(updatedSearchHistoryTab.searchQueries.count) queries")
+        print("   Current tab ID: \(selectedTabId?.uuidString ?? "nil")")
+        print("   Search History tab ID: \(ResearchTab.searchHistoryTabId.uuidString)")
+        
+        // Verify the query is actually in the tab
+        if let finalTab = tabs.first(where: { $0.isSearchHistoryTab }) {
+            print("   Verification: Search History tab has \(finalTab.searchQueries.count) queries")
+            if finalTab.searchQueries.contains(where: { $0.id == query.id }) {
+                print("   ✅ Query is confirmed in Search History tab")
+            } else {
+                print("   ❌ ERROR: Query is NOT in Search History tab!")
+            }
+        }
     }
     
     @MainActor
@@ -488,8 +609,10 @@ struct ContentView: View {
     // MARK: - Search History View
     
     private var searchHistoryView: some View {
-        SearchQueriesListView(
-            searchQueries: searchHistoryTab?.searchQueries ?? [],
+        let queries = searchHistoryTab?.searchQueries ?? []
+        let _ = print("🔍 searchHistoryView computed - queries count: \(queries.count)")
+        return SearchQueriesListView(
+            searchQueries: queries,
             onSelectQuery: { query in
                 // Select the query in the search history tab
                 guard let searchHistoryTabIndex = tabs.firstIndex(where: { $0.isSearchHistoryTab }) else { return }
@@ -564,54 +687,55 @@ struct ContentView: View {
     
     private var mainContentView: some View {
         GeometryReader { geometry in
-            HStack(spacing: 0) {
-                // Main content area
+            ZStack(alignment: .trailing) {
+                // Main content area - takes full width but respects Gemini panel
                 contentArea
                     .frame(maxWidth: .infinity)
+                    .padding(.trailing, currentTab?.showGeminiChat == true ? 
+                        max(minChatWidth, geminiChatWidth > 0 ? geminiChatWidth : (cachedGeometryWidth > 0 ? cachedGeometryWidth * 0.4 : geometry.size.width * 0.4)) + 12 : 0)
                 
-                // Gemini Chat Panel (when enabled)
+                // Gemini Chat Panel (when enabled) - anchored to right edge
                 if currentTab?.showGeminiChat == true {
-                    // Left border for Gemini panel
-                    Divider()
-                        .background(Color(NSColor.separatorColor))
-                    
-                    ResizableDividerView(
-                        isDragging: $isDraggingGeminiPanel,
-                        dragStartWidth: $dragStartWidth,
-                        currentWidth: geminiChatWidth,
-                        geometryWidth: cachedGeometryWidth > 0 ? cachedGeometryWidth : geometry.size.width,
-                        minWidth: minChatWidth,
-                        maxWidth: maxChatWidth,
-                        onWidthChanged: { newWidth in
-                            geminiChatWidth = newWidth
-                        },
-                        onDragEnded: {}
-                    )
-                    
-                    GeminiChatView(
-                        selectedSpreadsheets: selectedSpreadsheetsForGemini,
-                        geminiAPIKey: Binding(
-                            get: { geminiCredentialManager.apiKey },
-                            set: { geminiCredentialManager.apiKey = $0 }
-                        ),
-                        messages: Binding(
-                            get: { currentTab?.geminiMessages ?? [] },
-                            set: { newMessages in
-                                guard let index = currentTabIndex else { return }
-                                tabs[index].geminiMessages = newMessages
-                                saveMessagesForTab(at: index)
+                    HStack(spacing: 0) {
+                        // Resizable divider on the left
+                        ResizableDividerView(
+                            isDragging: $isDraggingGeminiPanel,
+                            dragStartWidth: $dragStartWidth,
+                            currentWidth: geminiChatWidth,
+                            geometryWidth: cachedGeometryWidth > 0 ? cachedGeometryWidth : geometry.size.width,
+                            minWidth: minChatWidth,
+                            maxWidth: maxChatWidth,
+                            onWidthChanged: { newWidth in
+                                geminiChatWidth = newWidth
+                            },
+                            onDragEnded: {}
+                        )
+                        
+                        // Gemini panel - fixed to right edge
+                        GeminiChatView(
+                            selectedSpreadsheets: selectedSpreadsheetsForGemini,
+                            geminiAPIKey: Binding(
+                                get: { geminiCredentialManager.apiKey },
+                                set: { geminiCredentialManager.apiKey = $0 }
+                            ),
+                            messages: Binding(
+                                get: { currentTab?.geminiMessages ?? [] },
+                                set: { newMessages in
+                                    guard let index = currentTabIndex else { return }
+                                    tabs[index].geminiMessages = newMessages
+                                    saveMessagesForTab(at: index)
+                                }
+                            ),
+                            tabId: currentTab?.id ?? UUID()
+                        )
+                        .frame(
+                            width: max(minChatWidth, geminiChatWidth > 0 ? geminiChatWidth : (cachedGeometryWidth > 0 ? cachedGeometryWidth * 0.4 : geometry.size.width * 0.4))
+                        )
+                        .layoutPriority(isDraggingGeminiPanel ? 2 : 1)
+                        .transaction { transaction in
+                            if isDraggingGeminiPanel {
+                                transaction.disablesAnimations = true
                             }
-                        ),
-                        tabId: currentTab?.id ?? UUID()
-                    )
-                    .frame(
-                        width: max(minChatWidth, geminiChatWidth > 0 ? geminiChatWidth : (cachedGeometryWidth > 0 ? cachedGeometryWidth * 0.4 : geometry.size.width * 0.4)),
-                        alignment: .trailing
-                    )
-                    .layoutPriority(isDraggingGeminiPanel ? 2 : 1)
-                    .transaction { transaction in
-                        if isDraggingGeminiPanel {
-                            transaction.disablesAnimations = true
                         }
                     }
                     .onAppear {
@@ -647,7 +771,13 @@ struct ContentView: View {
             } else {
                 // Show Data Analysis Hub as default content
                 DataAnalysisHubView(
-                    spreadsheets: $savedSpreadsheets,
+                    spreadsheets: Binding(
+                        get: { currentTab?.spreadsheets ?? [] },
+                        set: { newValue in
+                            guard let index = currentTabIndex else { return }
+                            tabs[index].spreadsheets = newValue
+                        }
+                    ),
                     selectedSpreadsheetIds: Binding(
                         get: { currentTab?.selectedSpreadsheetIds ?? [] },
                         set: { newValue in
@@ -677,9 +807,7 @@ struct ContentView: View {
                     currentTabCohortIds: currentTab?.cohortIds ?? [],
                     spreadsheetExporter: spreadsheetExporter,
                     formatDate: formatDate,
-                    onRefresh: {
-                        loadSavedSpreadsheets()
-                    },
+                    allSpreadsheets: savedSpreadsheets,
                     onSelectForText: { spreadsheet in
                         updateCurrentTab { tab in
                             var updated = tab
@@ -687,13 +815,25 @@ struct ContentView: View {
                             return updated
                         }
                     },
+                    onAddSpreadsheetToTab: { spreadsheetId in
+                        guard let index = currentTabIndex else { return }
+                        tabs[index].selectedSpreadsheetIds.insert(spreadsheetId)
+                        // Also add to spreadsheets list if not already there
+                        if !tabs[index].spreadsheets.contains(where: { $0.id == spreadsheetId }) {
+                            if let spreadsheet = savedSpreadsheets.first(where: { $0.id == spreadsheetId }) {
+                                tabs[index].spreadsheets.append(spreadsheet)
+                            }
+                        }
+                        saveApplicationState()
+                    },
                     onShowCohortManager: {
                         showCohortManager = true
                     },
                     onRemoveFromTab: { spreadsheetIds in
                         guard let index = currentTabIndex else { return }
-                        // Remove from tab's selectedSpreadsheetIds
+                        // Remove from tab's selectedSpreadsheetIds and spreadsheets list
                         tabs[index].selectedSpreadsheetIds.subtract(spreadsheetIds)
+                        tabs[index].spreadsheets.removeAll { spreadsheetIds.contains($0.id) }
                         saveApplicationState()
                     },
                     onAddCohortToTab: { cohortId in
@@ -723,7 +863,9 @@ struct ContentView: View {
             spreadsheetIds.formUnion(cohort.spreadsheetIds)
         }
         
-        return savedSpreadsheets.filter { spreadsheetIds.contains($0.id) }
+        // Return unique spreadsheets (in case a spreadsheet is both directly selected and in a cohort)
+        let uniqueIds = Array(spreadsheetIds)
+        return savedSpreadsheets.filter { uniqueIds.contains($0.id) }
     }
     
     private func deleteSpreadsheet(_ spreadsheet: SavedSpreadsheet) {

@@ -12,9 +12,11 @@ struct SpreadsheetListView: View {
     @Binding var spreadsheets: [SavedSpreadsheet]
     @Binding var selectedSpreadsheetIds: Set<UUID>
     let cohorts: [Cohort]
+    let allSpreadsheets: [SavedSpreadsheet] // All spreadsheets for cohort data calculation
     let spreadsheetExporter: SpreadsheetExporter
     let onSelectForText: (SavedSpreadsheet) -> Void
     let onDelete: (SavedSpreadsheet) -> Void
+    let onRemoveFromTab: (UUID) -> Void
     let formatDate: (Date) -> String
     let isDragging: Bool
     var multiSelectMode: Bool = false
@@ -26,9 +28,11 @@ struct SpreadsheetListView: View {
         spreadsheets: Binding<[SavedSpreadsheet]>,
         selectedSpreadsheetIds: Binding<Set<UUID>>,
         cohorts: [Cohort] = [],
+        allSpreadsheets: [SavedSpreadsheet] = [],
         spreadsheetExporter: SpreadsheetExporter,
         onSelectForText: @escaping (SavedSpreadsheet) -> Void,
         onDelete: @escaping (SavedSpreadsheet) -> Void,
+        onRemoveFromTab: @escaping (UUID) -> Void = { _ in },
         formatDate: @escaping (Date) -> String,
         isDragging: Bool,
         multiSelectMode: Bool = false,
@@ -39,9 +43,11 @@ struct SpreadsheetListView: View {
         self._spreadsheets = spreadsheets
         self._selectedSpreadsheetIds = selectedSpreadsheetIds
         self.cohorts = cohorts
+        self.allSpreadsheets = allSpreadsheets
         self.spreadsheetExporter = spreadsheetExporter
         self.onSelectForText = onSelectForText
         self.onDelete = onDelete
+        self.onRemoveFromTab = onRemoveFromTab
         self.formatDate = formatDate
         self.isDragging = isDragging
         self.multiSelectMode = multiSelectMode
@@ -52,7 +58,7 @@ struct SpreadsheetListView: View {
     
     var body: some View {
         Group {
-            if spreadsheets.isEmpty {
+            if spreadsheets.isEmpty && cohorts.isEmpty {
                 VStack(spacing: 20) {
                     Spacer()
                     Image(systemName: "chart.bar.doc.horizontal")
@@ -76,7 +82,7 @@ struct SpreadsheetListView: View {
                         ForEach(cohorts) { cohort in
                             CohortCellView(
                                 cohort: cohort,
-                                spreadsheets: spreadsheets.filter { cohort.spreadsheetIds.contains($0.id) },
+                                spreadsheets: allSpreadsheets.filter { cohort.spreadsheetIds.contains($0.id) },
                                 multiSelectMode: multiSelectMode,
                                 isSelectedForGemini: Binding(
                                     get: { selectedCohortIds.contains(cohort.id) },
@@ -122,6 +128,9 @@ struct SpreadsheetListView: View {
                                 formatDate: formatDate,
                                 onSelectForText: onSelectForText,
                                 onDelete: onDelete,
+                                onRemoveFromTab: { spreadsheetId in
+                                    onRemoveFromTab(spreadsheetId)
+                                },
                                 multiSelectMode: multiSelectMode,
                                 isSelectedForRemoval: Binding(
                                     get: { selectedForRemoval.contains(spreadsheet.id) },
@@ -154,6 +163,7 @@ struct SpreadsheetCellView: View {
     let formatDate: (Date) -> String
     let onSelectForText: (SavedSpreadsheet) -> Void
     let onDelete: (SavedSpreadsheet) -> Void
+    let onRemoveFromTab: (UUID) -> Void
     let multiSelectMode: Bool
     @Binding var isSelectedForRemoval: Bool
     
@@ -207,6 +217,17 @@ struct SpreadsheetCellView: View {
             if !multiSelectMode {
                 HStack(spacing: 8) {
                     Button(action: {
+                        onRemoveFromTab(spreadsheet.id)
+                    }) {
+                        Image(systemName: "minus.circle.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(.red.opacity(0.7))
+                            .frame(width: 28, height: 28)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Remove from tab")
+                    
+                    Button(action: {
                         onSelectForText(spreadsheet)
                     }) {
                         Image(systemName: "text.alignleft")
@@ -236,6 +257,7 @@ struct SpreadsheetCellView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
+        .frame(height: 70)
         .background(
             RoundedRectangle(cornerRadius: 10)
                 .fill(

@@ -23,6 +23,12 @@ class MassiveRepositoryImpl: MassiveRepository {
         self.apiKey = apiKey
         self.baseURL = baseURL
         self.session = URLSession.shared
+        print("🏗️ MassiveRepositoryImpl initialized")
+        print("   API key length: \(apiKey.count)")
+        print("   API key is empty: \(apiKey.isEmpty)")
+        if !apiKey.isEmpty {
+            print("   API key prefix: \(apiKey.prefix(8))...")
+        }
     }
     
     // MARK: - Aggregates
@@ -70,7 +76,12 @@ class MassiveRepositoryImpl: MassiveRepository {
             debugURL = urlComponents.url ?? url
         }
         print("🔍 API Request URL: \(debugURL.absoluteString)")
-        print("🔑 API Key: \(apiKey.prefix(8))...")
+        print("🔑 API Key length: \(apiKey.count)")
+        if apiKey.isEmpty {
+            print("❌ WARNING: API Key is EMPTY!")
+        } else {
+            print("🔑 API Key prefix: \(apiKey.prefix(8))...")
+        }
         print("🌐 Base URL: \(baseURL)")
         
         var request = URLRequest(url: url)

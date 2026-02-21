@@ -15,8 +15,7 @@ struct QueryDetailView: View {
         ScrollView {
             StockDataResultsView(
                 aggregates: query.aggregates,
-                ticker: query.ticker,
-                tickerDetails: query.tickerDetails
+                ticker: query.ticker
             )
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

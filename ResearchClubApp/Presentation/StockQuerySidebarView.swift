@@ -83,7 +83,12 @@ struct StockQuerySidebarView: View {
                     }
                     
                     // Fetch Stock Data Button
-                    Button(action: onFetchData) {
+                    Button(action: {
+                        print("🔵 Fetch Data button tapped in StockQuerySidebarView")
+                        print("   Ticker: '\(viewModel.ticker)'")
+                        print("   Is Loading: \(viewModel.isLoading)")
+                        onFetchData()
+                    }) {
                         HStack(spacing: 8) {
                             if viewModel.isLoading {
                                 ProgressView()

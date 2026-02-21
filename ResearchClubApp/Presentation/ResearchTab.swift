@@ -17,10 +17,11 @@ struct ResearchTab: Identifiable, Equatable, Codable {
     var isSearchHistoryTab: Bool
     var geminiMessages: [ChatMessage]
     var selectedSpreadsheetIds: Set<UUID>
+    var spreadsheets: [SavedSpreadsheet] // Spreadsheets assigned to this tab
     var cohortIds: Set<UUID> // Cohorts assigned to this tab
     var selectedCohortIds: Set<UUID> // Cohorts selected for Gemini analysis
     
-    init(id: UUID = UUID(), name: String = "New Research", searchQueries: [SearchQuery] = [], selectedQuery: SearchQuery? = nil, showGeminiChat: Bool = false, selectedSpreadsheetForText: SavedSpreadsheet? = nil, isSearchHistoryTab: Bool = false, geminiMessages: [ChatMessage] = [], selectedSpreadsheetIds: Set<UUID> = [], cohortIds: Set<UUID> = [], selectedCohortIds: Set<UUID> = []) {
+    init(id: UUID = UUID(), name: String = "New Research", searchQueries: [SearchQuery] = [], selectedQuery: SearchQuery? = nil, showGeminiChat: Bool = false, selectedSpreadsheetForText: SavedSpreadsheet? = nil, isSearchHistoryTab: Bool = false, geminiMessages: [ChatMessage] = [], selectedSpreadsheetIds: Set<UUID> = [], spreadsheets: [SavedSpreadsheet] = [], cohortIds: Set<UUID> = [], selectedCohortIds: Set<UUID> = []) {
         self.id = id
         self.name = name
         self.searchQueries = searchQueries
@@ -30,6 +31,7 @@ struct ResearchTab: Identifiable, Equatable, Codable {
         self.isSearchHistoryTab = isSearchHistoryTab
         self.geminiMessages = geminiMessages
         self.selectedSpreadsheetIds = selectedSpreadsheetIds
+        self.spreadsheets = spreadsheets
         self.cohortIds = cohortIds
         self.selectedCohortIds = selectedCohortIds
     }
@@ -43,8 +45,11 @@ struct ResearchTab: Identifiable, Equatable, Codable {
         lhs.isSearchHistoryTab == rhs.isSearchHistoryTab &&
         lhs.geminiMessages.count == rhs.geminiMessages.count &&
         lhs.selectedSpreadsheetIds == rhs.selectedSpreadsheetIds &&
+        lhs.spreadsheets.count == rhs.spreadsheets.count &&
         lhs.cohortIds == rhs.cohortIds &&
-        lhs.selectedCohortIds == rhs.selectedCohortIds
+        lhs.selectedCohortIds == rhs.selectedCohortIds &&
+        lhs.searchQueries.count == rhs.searchQueries.count &&
+        lhs.searchQueries.map { $0.id } == rhs.searchQueries.map { $0.id }
     }
     
     static let searchHistoryTabId = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
@@ -54,7 +59,7 @@ struct ResearchTab: Identifiable, Equatable, Codable {
     enum CodingKeys: String, CodingKey {
         case id, name, searchQueries, selectedQuery, showGeminiChat
         case selectedSpreadsheetForText, isSearchHistoryTab, geminiMessages
-        case selectedSpreadsheetIds, cohortIds, selectedCohortIds
+        case selectedSpreadsheetIds, spreadsheets, cohortIds, selectedCohortIds
     }
     
     init(from decoder: Decoder) throws {
@@ -85,6 +90,13 @@ struct ResearchTab: Identifiable, Equatable, Codable {
         } else {
             selectedCohortIds = []
         }
+        
+        // Decode spreadsheets (with fallback for older saved states)
+        if let spreadsheetsArray = try? container.decode([SavedSpreadsheet].self, forKey: .spreadsheets) {
+            spreadsheets = spreadsheetsArray
+        } else {
+            spreadsheets = []
+        }
     }
     
     func encode(to encoder: Encoder) throws {
@@ -100,6 +112,7 @@ struct ResearchTab: Identifiable, Equatable, Codable {
         
         // Encode Set<UUID> as array
         try container.encode(Array(selectedSpreadsheetIds), forKey: .selectedSpreadsheetIds)
+        try container.encode(spreadsheets, forKey: .spreadsheets)
         try container.encode(Array(cohortIds), forKey: .cohortIds)
         try container.encode(Array(selectedCohortIds), forKey: .selectedCohortIds)
     }

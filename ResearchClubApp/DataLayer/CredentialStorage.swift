@@ -18,7 +18,19 @@ class CredentialStorage {
     /// Saves the API key to UserDefaults
     /// - Parameter apiKey: The API key to save
     func saveAPIKey(_ apiKey: String) {
+        print("💾 CredentialStorage.saveAPIKey() called")
+        print("   Key length: \(apiKey.count)")
+        print("   Key prefix: \(apiKey.prefix(8))...")
         userDefaults.set(apiKey, forKey: apiKeyKey)
+        userDefaults.synchronize() // Force immediate write
+        print("✅ API Key saved to UserDefaults with key: \(apiKeyKey)")
+        
+        // Verify it was saved
+        if let saved = userDefaults.string(forKey: apiKeyKey) {
+            print("✅ Verified: API Key retrieved from UserDefaults, length: \(saved.count)")
+        } else {
+            print("❌ ERROR: API Key was NOT saved to UserDefaults!")
+        }
     }
     
     /// Retrieves the saved API key from UserDefaults

@@ -15,10 +15,6 @@ struct CohortCellView: View {
     @Binding var isSelectedForRemoval: Bool
     let onRemove: () -> Void
     
-    var totalDataPoints: Int {
-        spreadsheets.reduce(0) { $0 + $1.dataPointCount }
-    }
-    
     var body: some View {
         HStack(spacing: 16) {
             if multiSelectMode {
@@ -32,39 +28,32 @@ struct CohortCellView: View {
                 }
                 .buttonStyle(.plain)
             } else {
-                // Selection indicator for Gemini (similar to spreadsheets)
+                // Selection indicator for Gemini (similar to spreadsheets, more subtle)
                 Circle()
-                    .fill(isSelectedForGemini ? cohort.color.color : Color.clear)
+                    .fill(isSelectedForGemini ? Color.purple : Color.clear)
                     .frame(width: 8, height: 8)
                     .overlay(
                         Circle()
-                            .stroke(isSelectedForGemini ? cohort.color.color : Color(NSColor.separatorColor), lineWidth: 2)
+                            .stroke(isSelectedForGemini ? Color.purple : Color(NSColor.separatorColor), lineWidth: 2)
                             .frame(width: 12, height: 12)
                     )
             }
             
             // Content
             VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 8) {
+                HStack(spacing: 6) {
                     Text(cohort.name)
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(.primary)
                     
-                    // Color badge
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(cohort.color.color)
-                        .frame(width: 6, height: 6)
+                    // Subtle color badge
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(cohort.color.color.opacity(0.6))
+                        .frame(width: 4, height: 4)
                 }
                 
                 HStack(spacing: 8) {
                     Label("\(spreadsheets.count) spreadsheets", systemImage: "doc.text.fill")
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
-                    
-                    Text("•")
-                        .foregroundColor(.secondary)
-                    
-                    Label("\(totalDataPoints) points", systemImage: "chart.bar.fill")
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
                     
@@ -94,36 +83,19 @@ struct CohortCellView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
+        .frame(height: 70)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            cohort.color.color.opacity(0.08),
-                            cohort.color.color.opacity(0.03)
-                        ]),
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color(NSColor.windowBackgroundColor))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
+                    RoundedRectangle(cornerRadius: 10)
                         .stroke(
                             multiSelectMode && isSelectedForRemoval ? Color.orange.opacity(0.4) :
-                            isSelectedForGemini ? cohort.color.color.opacity(0.6) :
-                            cohort.color.color.opacity(0.3),
+                            isSelectedForGemini ? cohort.color.color.opacity(0.4) :
+                            Color(NSColor.separatorColor).opacity(0.5),
                             lineWidth: multiSelectMode && isSelectedForRemoval ? 2 : 
-                            isSelectedForGemini ? 2 : 1.5
+                            isSelectedForGemini ? 2 : 1
                         )
-                )
-                .overlay(
-                    // Left accent bar
-                    HStack {
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(cohort.color.color)
-                            .frame(width: 4)
-                        Spacer()
-                    }
                 )
         )
         .contentShape(Rectangle())

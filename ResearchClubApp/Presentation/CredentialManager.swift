@@ -24,12 +24,18 @@ class CredentialManager: ObservableObject {
     
     /// Loads saved credentials from storage if they exist
     func loadSavedCredentials() {
+        print("🔑 CredentialManager.loadSavedCredentials() called")
         if let savedAPIKey = manageCredentialsUseCase.loadSavedCredentials() {
+            print("✅ Found saved API key, length: \(savedAPIKey.count)")
             apiKey = savedAPIKey
             saveCredentials = manageCredentialsUseCase.getSaveCredentialsState()
+            print("   Save credentials checkbox state: \(saveCredentials)")
         } else {
+            print("ℹ️ No saved API key found")
             saveCredentials = manageCredentialsUseCase.getSaveCredentialsState()
+            print("   Save credentials checkbox state: \(saveCredentials)")
         }
+        print("   Current API key length: \(apiKey.count)")
     }
     
     /// Saves credentials to secure storage if saveCredentials is true
@@ -70,9 +76,19 @@ class CredentialManager: ObservableObject {
     /// Creates a repository instance with the current API key
     /// - Returns: Repository instance if credentials are valid, nil otherwise
     func createRepository() -> MassiveRepositoryImpl? {
+        let trimmedKey = apiKey.trimmingCharacters(in: .whitespaces)
+        print("🔑 CredentialManager.createRepository() called")
+        print("   API key length: \(apiKey.count)")
+        print("   Trimmed key length: \(trimmedKey.count)")
+        print("   Has valid credentials: \(hasValidCredentials)")
+        
         guard hasValidCredentials else {
+            print("❌ Credentials are not valid, returning nil")
             return nil
         }
-        return MassiveRepositoryImpl(apiKey: apiKey.trimmingCharacters(in: .whitespaces))
+        
+        let repo = MassiveRepositoryImpl(apiKey: trimmedKey)
+        print("✅ Created repository with key length: \(trimmedKey.count)")
+        return repo
     }
 }

@@ -92,6 +92,8 @@ class StockDataViewModel: ObservableObject {
                 }
             }
         } catch {
+            print("❌ Error fetching stock data: \(error.localizedDescription)")
+            print("   Error type: \(type(of: error))")
             // Presentation logic: Format error for display
             errorMessage = error.localizedDescription
             aggregates = []

@@ -56,18 +56,35 @@ struct SettingsView: View {
                                 .fontWeight(.medium)
                             SecureField("Enter your API key", text: $credentialManager.apiKey)
                                 .textFieldStyle(.roundedBorder)
-                                .onChange(of: credentialManager.apiKey) { _, _ in
-                                    if credentialManager.saveCredentials {
-                                        saveCredentials()
+                                .onChange(of: credentialManager.apiKey) { _, newValue in
+                                    print("🔑 API Key changed, length: \(newValue.count)")
+                                    if credentialManager.saveCredentials && !newValue.isEmpty {
+                                        print("🔑 Save credentials is checked and key is not empty, saving...")
+                                        do {
+                                            try credentialManager.saveCredentialsIfNeeded()
+                                            print("✅ API Key saved successfully")
+                                            // Update repository after saving
+                                            onUpdate?()
+                                        } catch {
+                                            print("❌ Failed to save API key: \(error.localizedDescription)")
+                                        }
+                                    } else {
+                                        print("🔑 Save credentials is NOT checked or key is empty")
+                                        // Still update repository even if not saving (user might be typing)
+                                        onUpdate?()
                                     }
                                 }
                             
                             Toggle("Save credentials securely", isOn: $credentialManager.saveCredentials)
                                 .onChange(of: credentialManager.saveCredentials) { _, newValue in
-                                    if newValue {
-                                        saveCredentials()
-                                    } else {
-                                        credentialManager.deleteSavedCredentials()
+                                    print("🔑 Save credentials toggle changed to: \(newValue)")
+                                    do {
+                                        try credentialManager.saveCredentialsIfNeeded()
+                                        print("✅ API Key save state updated")
+                                        // Update repository after saving
+                                        onUpdate?()
+                                    } catch {
+                                        print("❌ Failed to save API key: \(error.localizedDescription)")
                                     }
                                 }
                         }
@@ -110,6 +127,14 @@ struct SettingsView: View {
         }
         .frame(width: 500, height: 500)
         .background(Color(NSColor.windowBackgroundColor))
+        .onChange(of: credentialManager.apiKey) { _, _ in
+            // Update repository when API key changes
+            onUpdate?()
+        }
+        .onChange(of: credentialManager.saveCredentials) { _, _ in
+            // Update repository when save state changes
+            onUpdate?()
+        }
     }
     
     private func saveCredentials() {

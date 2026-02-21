@@ -16,6 +16,8 @@ struct UnifiedNavBarView: View {
     let onToggleSidebar: () -> Void
     let onToggleCohorts: (() -> Void)?
     let onRefresh: (() -> Void)?
+    let onDeleteQuery: (() -> Void)? // For Search History queries
+    let onCloseQuery: (() -> Void)? // For Search History queries
     
     var body: some View {
         HStack(spacing: 16) {
@@ -51,6 +53,37 @@ struct UnifiedNavBarView: View {
             
             // Action buttons
             HStack(spacing: 12) {
+                // Search History query actions (delete and close)
+                if let onDeleteQuery = onDeleteQuery {
+                    Button(action: onDeleteQuery) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 13))
+                            .foregroundColor(.red)
+                            .frame(width: 32, height: 32)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(Color.red.opacity(0.1))
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .help("Delete Search")
+                }
+                
+                if let onCloseQuery = onCloseQuery {
+                    Button(action: onCloseQuery) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 13))
+                            .foregroundColor(.secondary)
+                            .frame(width: 32, height: 32)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(Color(NSColor.controlBackgroundColor))
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .help("Close View")
+                }
+                
                 // Cohorts button
                 if let onToggleCohorts = onToggleCohorts {
                     Button(action: onToggleCohorts) {

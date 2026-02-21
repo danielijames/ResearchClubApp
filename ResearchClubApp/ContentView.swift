@@ -93,7 +93,19 @@ struct ContentView: View {
                     onToggleCohorts: {
                         showCohortManager = true
                     },
-                    onRefresh: navBarRefreshAction
+                    onRefresh: navBarRefreshAction,
+                    onDeleteQuery: (currentTab?.isSearchHistoryTab == true && currentTab?.selectedQuery != nil) ? {
+                        deleteSelectedQuery()
+                    } : nil,
+                    onCloseQuery: (currentTab?.isSearchHistoryTab == true && currentTab?.selectedQuery != nil) ? {
+                        updateCurrentTab { tab in
+                            var updated = tab
+                            withAnimation {
+                                updated.selectedQuery = nil
+                            }
+                            return updated
+                        }
+                    } : nil
                 )
                 
                 // Two-column layout: Input Sidebar | Main Content (or Search History)
@@ -143,34 +155,41 @@ struct ContentView: View {
                     
                     // Right: Main Content Area or Search History
                     if currentTab?.isSearchHistoryTab == true {
-                        let searchHistoryQueries = tabs.first(where: { $0.isSearchHistoryTab })?.searchQueries ?? []
-                        let _ = print("🔍 Rendering Search History view - queries count: \(searchHistoryQueries.count), tab selected: \(selectedTabId?.uuidString ?? "nil")")
-                        SearchQueriesListView(
-                            searchQueries: searchHistoryQueries,
-                            onSelectQuery: { query in
-                                // Select the query in the search history tab
-                                guard let searchHistoryTabIndex = tabs.firstIndex(where: { $0.isSearchHistoryTab }) else { return }
-                                updateCurrentTab { currentTab in
-                                    var updated = currentTab
-                                    withAnimation {
-                                        updated.selectedQuery = query
+                        // Show QueryDetailView if a query is selected, otherwise show the list
+                        if let selectedQuery = currentTab?.selectedQuery {
+                            QueryDetailView(query: selectedQuery)
+                                .frame(maxWidth: .infinity)
+                                .id("queryDetail-\(selectedQuery.id.uuidString)")
+                        } else {
+                            let searchHistoryQueries = tabs.first(where: { $0.isSearchHistoryTab })?.searchQueries ?? []
+                            let _ = print("🔍 Rendering Search History view - queries count: \(searchHistoryQueries.count), tab selected: \(selectedTabId?.uuidString ?? "nil")")
+                            SearchQueriesListView(
+                                searchQueries: searchHistoryQueries,
+                                onSelectQuery: { query in
+                                    // Select the query in the search history tab
+                                    guard let searchHistoryTabIndex = tabs.firstIndex(where: { $0.isSearchHistoryTab }) else { return }
+                                    updateCurrentTab { currentTab in
+                                        var updated = currentTab
+                                        withAnimation {
+                                            updated.selectedQuery = query
+                                        }
+                                        return updated
                                     }
-                                    return updated
-                                }
-                            },
-                            onClearAll: {
-                                // Clear all queries from Search History tab
-                                guard let searchHistoryTabIndex = tabs.firstIndex(where: { $0.isSearchHistoryTab }) else { return }
-                                var updatedTabs = tabs
-                                updatedTabs[searchHistoryTabIndex].searchQueries.removeAll()
-                                updatedTabs[searchHistoryTabIndex].selectedQuery = nil
-                                tabs = updatedTabs
-                                saveApplicationState() // Save after clearing
-                            },
-                            formatDate: self.formatDate
-                        )
-                        .frame(maxWidth: .infinity)
-                        .id("searchHistory-\(searchHistoryQueries.count)-\(searchHistoryQueries.map { $0.id.uuidString }.joined(separator: "-"))")
+                                },
+                                onClearAll: {
+                                    // Clear all queries from Search History tab
+                                    guard let searchHistoryTabIndex = tabs.firstIndex(where: { $0.isSearchHistoryTab }) else { return }
+                                    var updatedTabs = tabs
+                                    updatedTabs[searchHistoryTabIndex].searchQueries.removeAll()
+                                    updatedTabs[searchHistoryTabIndex].selectedQuery = nil
+                                    tabs = updatedTabs
+                                    saveApplicationState() // Save after clearing
+                                },
+                                formatDate: self.formatDate
+                            )
+                            .frame(maxWidth: .infinity)
+                            .id("searchHistory-\(searchHistoryQueries.count)-\(searchHistoryQueries.map { $0.id.uuidString }.joined(separator: "-"))")
+                        }
                     } else {
                         mainContentView
                             .frame(maxWidth: .infinity)
@@ -608,6 +627,20 @@ struct ContentView: View {
     
     // MARK: - Search History View
     
+    @MainActor
+    private func deleteSelectedQuery() {
+        guard let query = currentTab?.selectedQuery,
+              let searchHistoryTabIndex = tabs.firstIndex(where: { $0.isSearchHistoryTab }) else {
+            return
+        }
+        
+        var updatedTabs = tabs
+        updatedTabs[searchHistoryTabIndex].searchQueries.removeAll { $0.id == query.id }
+        updatedTabs[searchHistoryTabIndex].selectedQuery = nil
+        tabs = updatedTabs
+        saveApplicationState()
+    }
+    
     private var searchHistoryView: some View {
         let queries = searchHistoryTab?.searchQueries ?? []
         let _ = print("🔍 searchHistoryView computed - queries count: \(queries.count)")
@@ -652,7 +685,11 @@ struct ContentView: View {
     }
     
     private var shouldShowBackButton: Bool {
-        currentTab?.selectedQuery != nil || currentTab?.selectedSpreadsheetForText != nil
+        // Don't show back button in Search History tab - use action buttons instead
+        if currentTab?.isSearchHistoryTab == true {
+            return false
+        }
+        return currentTab?.selectedQuery != nil || currentTab?.selectedSpreadsheetForText != nil
     }
     
     private var navBarBackAction: (() -> Void)? {

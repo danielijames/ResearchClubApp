@@ -33,7 +33,7 @@ struct StockChartView: View {
     // Chart type selection
     @State private var chartType: ChartType
     
-    init(aggregates: [StockAggregate], ticker: String, initialChartType: ChartType = .candlestick) {
+    init(aggregates: [StockAggregate], ticker: String, initialChartType: ChartType = .line) {
         self.aggregates = aggregates
         self.ticker = ticker
         _chartType = State(initialValue: initialChartType)
